@@ -1,4 +1,4 @@
-#include "test_prod.h"
+#include "HeterogeneousHGCalRecHitProducer.h"
 
 HeterogeneousHGCalRecHitsProd::HeterogeneousHGCalRecHitsProd(const edm::ParameterSet& ps):
   hitsTokens_({{consumes<HGCeeUncalibratedRecHitCollection>(ps.getParameter<edm::InputTag>("HGCEEUncalibRecHitsTok")),
@@ -22,7 +22,6 @@ void HeterogeneousHGCalRecHitsProd::produce(edm::Event& iEvent, const edm::Event
 {
   scrambler_wrapper(buffer_, message_.size());
   
-  auto eeRecHits = std::make_unique<HGCeeUncalibratedRecHitCollection>();
   auto hefRecHits = std::make_unique<HGChefUncalibratedRecHitCollection>();
   auto hebRecHits = std::make_unique<HGChebUncalibratedRecHitCollection>();
 
@@ -31,9 +30,10 @@ void HeterogeneousHGCalRecHitsProd::produce(edm::Event& iEvent, const edm::Event
   edm::Handle<HGChebUncalibratedRecHitCollection> hebRecHitsHandle;
 
   iEvent.getByToken(hitsTokens_[0], eeRecHitsHandle);
-  const auto &eeHits = *eeRecHitsHandle;  
-  for(const auto &hit: eeHits)
-      eeRecHits->push_back(hit);
+  const auto &eeHits = *eeRecHitsHandle;
+  std::cout << "check" << std::endl;
+  auto eeRecHits = HGCeeRecHitKernel_wrapper(eeHits, collectionNames_[0]);
+  std::cout << "check" << std::endl;
 
   iEvent.getByToken(hitsTokens_[1], hefRecHitsHandle);
   const auto &hefHits = *hefRecHitsHandle;  

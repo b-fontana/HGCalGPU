@@ -1,4 +1,9 @@
+#ifndef HeterogeneousHGCalRecHitProducer_h
+#define HeterogeneousHGCalRecHitProducer_h
+
+#include <iostream>
 #include <string>
+#include <vector>
 #include <cuda_runtime.h>
 
 #include "FWCore/Framework/interface/stream/EDProducer.h"
@@ -13,7 +18,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
-#include "test_kernel.cuh"
+#include "HGCalRecHitKernel.cuh"
 
 class HeterogeneousHGCalRecHitsProd: public edm::stream::EDProducer<> 
 {
@@ -30,4 +35,8 @@ class HeterogeneousHGCalRecHitsProd: public edm::stream::EDProducer<>
 							  "HeterogeneousHGChefUncalibratedRecHits"}};
   std::string message_;
   char* buffer_;
+  edm::SortedCollection<HGCUncalibratedRecHit> oldhits;
+  edm::SortedCollection<HGCUncalibratedRecHit> newhits;
 };
+
+#endif //HeterogeneousHGCalRecHitProducer_h
