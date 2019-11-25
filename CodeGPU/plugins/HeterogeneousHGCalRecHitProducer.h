@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
+#include <memory>
 #include <cuda_runtime.h>
 
 #include "FWCore/Framework/interface/stream/EDProducer.h"
@@ -18,7 +18,8 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
-#include "HGCalRecHitKernel.cuh"
+#include "HGCalRecHitKernelWrappers.h"
+#include "Utils.h"
 
 class HeterogeneousHGCalRecHitsProd: public edm::stream::EDProducer<> 
 {
@@ -29,14 +30,11 @@ class HeterogeneousHGCalRecHitsProd: public edm::stream::EDProducer<>
   void produce(edm::Event& iEvent, const edm::EventSetup&) override;
 
  private:
-  std::array< edm::EDGetTokenT<HGCUncalibratedRecHitCollection>, 3 > hitsTokens_;
-  const std::array< std::string, 3 > collectionNames_ = {{"HeterogeneousHGCeeUncalibratedRecHits",
-							  "HeterogeneousHGChebUncalibratedRecHits", 
-							  "HeterogeneousHGChefUncalibratedRecHits"}};
-  std::string message_;
-  char* buffer_;
-  edm::SortedCollection<HGCUncalibratedRecHit> oldhits;
-  edm::SortedCollection<HGCUncalibratedRecHit> newhits;
+  std::array< edm::EDGetTokenT<HGCUncalibratedRecHitCollection>, 3 > hits_tokens_;
+  const std::array< std::string, 3 > collection_names_ = {{"HeterogeneousHGCeeUncalibratedRecHits",
+ 							  "HeterogeneousHGChefUncalibratedRecHits",
+							  "HeterogeneousHGChebUncalibratedRecHits"}};
+  edm::Handle<HGCeeUncalibratedRecHitCollection> handle_; 
 };
 
 #endif //HeterogeneousHGCalRecHitProducer_h
