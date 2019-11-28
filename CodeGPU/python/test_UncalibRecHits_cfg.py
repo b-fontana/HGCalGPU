@@ -16,15 +16,16 @@ process.source = cms.Source("PoolSource",
 process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool( False ))
 
-
-process.HeterogeneousHGCalRecHits = cms.EDProducer('HeterogeneousHGCalRecHitsProd', #module label
-                                                   message = cms.untracked.string('Hello world!'),
-                                                   HGCEEUncalibRecHitsTok =  cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'),
-                                                   HGCHEFUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEFUncalibRecHits'),
-                                                   HGCHEBUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEBUncalibRecHits'))
+process.HeterogeneousHGCalEERecHits =  cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
+                                                      HGCEEUncalibRecHitsTok =  cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'));
+process.HeterogeneousHGCalHEFRecHits = cms.EDProducer('HeterogeneousHGCalHEFRecHitsProd',
+                                                      HGCHEFUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEFUncalibRecHits'));
+process.HeterogeneousHGCalHEBRecHits = cms.EDProducer('HeterogeneousHGCalHEBRecHitsProd',
+                                                      HGCHEBUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEBUncalibRecHits'));
 
 fNameOut = 'out'
-process.path = cms.Path( process.HeterogeneousHGCalRecHits )
+#convert this to a task!!!!!
+process.path = cms.Path( process.HeterogeneousHGCalEERecHits * process.HeterogeneousHGCalHEFRecHits * process.HeterogeneousHGCalHEBRecHits )
 process.out = cms.OutputModule("PoolOutputModule", 
                                fileName = cms.untracked.string(fNameOut+'.root'))
 process.outpath = cms.EndPath(process.out)
