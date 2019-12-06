@@ -17,6 +17,11 @@
 #ifdef __CUDA_ARCH__
 extern __constant__ uint32_t calo_rechit_masks[];
 #endif
+/*
+#ifdef __CUDA_ARCH__
+extern __constant__ uint32_t calo_rechit_masks[];
+#endif
+*/
 
 template <typename T>
 class KernelConstantData {
@@ -47,27 +52,26 @@ template <typename TYPE_IN, typename TYPE_OUT>
 
 class KernelManagerHGCalRecHit {
  public:
-  KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>);
+  KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>*);
   ~KernelManagerHGCalRecHit();
-  void run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
-  void run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
-  void run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>*, KernelConstantData<HGCeeUncalibratedRecHitConstantData>*);
+  void run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>*, KernelConstantData<HGChefUncalibratedRecHitConstantData>*);
+  void run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData>*, KernelConstantData<HGChebUncalibratedRecHitConstantData>*);
   HGCRecHitSoA* get_output();
 
  private:
   void after_kernel_();
   LENGTHSIZE get_shared_memory_size_(const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&);
   void assign_and_transfer_to_device_();
-  void assign_and_transfer_to_device_(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
-  void assign_and_transfer_to_device_(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
-  void assign_and_transfer_to_device_(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
+  void assign_and_transfer_to_device_(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>*, KernelConstantData<HGCeeUncalibratedRecHitConstantData>*);
+  void assign_and_transfer_to_device_(const KernelConstantData<HGChefUncalibratedRecHitConstantData>*, KernelConstantData<HGChefUncalibratedRecHitConstantData>*);
+  void assign_and_transfer_to_device_(const KernelConstantData<HGChebUncalibratedRecHitConstantData>*, KernelConstantData<HGChebUncalibratedRecHitConstantData>*);
   void transfer_to_host_and_synchronize_();
   void reuse_device_pointers_();
 
   LENGTHSIZE nbytes_host_;
   LENGTHSIZE nbytes_device_;
-  const std::vector<HGCUncalibratedRecHitSoA> h_oldhits_;
-  KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data_;
+  KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> *data_;
 };
 
 #endif //_KERNELMANAGER_H_

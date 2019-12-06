@@ -19,7 +19,7 @@ process.load('RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi')
 process.load('SimCalorimetry.HGCalSimProducers.hgcalDigitizer_cfi')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32( 2 ))
+    input = cms.untracked.int32( 1 ))
 
 fNames = ['file:/afs/cern.ch/user/b/bfontana/CMSSW_11_0_0_pre11_Patatrack/src/UserCode/Samples/20495.0_CloseByParticleGun_CE_E_Front_200um+CE_E_Front_200um_2026D41_GenSimHLBeamSpotFull+DigiFullTrigger_2026D41+RecoFullGlobal_2026D41+HARVESTFullGlobal_2026D41/step3.root']
 keep = 'keep *'
@@ -31,10 +31,9 @@ process.source = cms.Source("PoolSource",
 
 process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool( False )) #add option for edmStreams
-
 process.HeterogeneousHGCalEERecHits = cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
                                                      HGCEEUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'),
-                                                     nhitsmax       = 40000,
+                                                     nhitsmax       = cms.uint32(40000),
                                                      HGCEE_keV2DIGI = HGCalRecHit.__dict__['HGCEE_keV2DIGI'],
                                                      HGCEE_fCPerMIP = HGCalRecHit.__dict__['HGCEE_fCPerMIP'],
                                                      HGCEE_isSiFE   = HGCalRecHit.__dict__['HGCEE_isSiFE'],
@@ -46,20 +45,19 @@ process.HeterogeneousHGCalEERecHits = cms.EDProducer('HeterogeneousHGCalEERecHit
                                                      weights        = HGCalRecHit.__dict__['layerWeights']
                                                  );
 
-"""
-=======
-    wantSummary = cms.untracked.bool( False ))
-
-process.HeterogeneousHGCalEERecHits =  cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
-                                                      HGCEEUncalibRecHitsTok =  cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'));
->>>>>>> 99e3fb6... events running in gpu; initial code skeleton completed
 process.HeterogeneousHGCalHEFRecHits = cms.EDProducer('HeterogeneousHGCalHEFRecHitsProd',
                                                       HGCHEFUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEFUncalibRecHits'));
 process.HeterogeneousHGCalHEBRecHits = cms.EDProducer('HeterogeneousHGCalHEBRecHitsProd',
                                                       HGCHEBUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEBUncalibRecHits'));
-<<<<<<< HEAD
 """
 fNameOut = 'out'
 #convert this to a task!!!!!
 #process.path = cms.Path( process.HeterogeneousHGCalEERecHits * process.HeterogeneousHGCalHEFRecHits * process.HeterogeneousHGCalHEBRecHits)
 process.path = cms.Path( process.HeterogeneousHGCalEERecHits )
+<<<<<<< HEAD
+=======
+process.out = cms.OutputModule("PoolOutputModule", 
+                               fileName = cms.untracked.string(fNameOut+'.root'))
+process.outpath = cms.EndPath(process.out)
+
+>>>>>>> 1e2c7f6... working with memory allocation per event

@@ -85,11 +85,13 @@ void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si
 __global__
 void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
+  printf("POINTER 2: %p\n", src_soa.amplitude);
   //this kernel is currently doing nothing
   unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
   for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
-      printf("QQQQ %" PRIu32 "\n", src_soa.id[i]);
+      //printf("WWWW %d\n", tid);
+      printf("QQQQ %" PRIu32 "\n", src_soa.amplitude[0]);
     }
 }
 
@@ -170,3 +172,7 @@ __constant__ uint32_t calo_rechit_masks[] = {0x00000000u, 0x00000001u, 0x0000000
 					     0x00ffffffu, 0x01ffffffu, 0x03ffffffu, 0x07ffffffu, 0x0fffffffu, 0x1fffffffu,
 					     0x3fffffffu, 0x7fffffffu, 0xffffffffu};
 #endif
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+*/
