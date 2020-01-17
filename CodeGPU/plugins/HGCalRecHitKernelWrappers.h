@@ -15,6 +15,18 @@
 
 #include "Utils.h"
 
+class HeterogeneousProducerConstantData {
+private:
+float a;
+std::vector<double> b;
+};
+
+class HeterogeneousProducerAcquireWrapper {
+public:
+HeterogeneousProducerAcquireWrapper();
+void set_geometry();
+};
+
 template <typename T_IN, typename T_OUT>
   edm::SortedCollection<T_OUT> kernel_manager_wrapper(const edm::SortedCollection<T_IN>&, const CUDAScopedContextAcquire&);
 							

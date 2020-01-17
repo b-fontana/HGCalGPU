@@ -4,6 +4,7 @@
 HeterogeneousHGCalEERecHitsProd::HeterogeneousHGCalEERecHitsProd(const edm::ParameterSet& ps):
   token_(consumes<HGCUncalibratedRecHitCollection>(ps.getParameter<edm::InputTag>("HGCEEUncalibRecHitsTok")))
 {
+  //read all constants and prepare their move to the wrapper
   produces<HGCeeUncalibratedRecHitCollection>(collection_name_);
 }
 
