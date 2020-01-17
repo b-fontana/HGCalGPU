@@ -1,5 +1,5 @@
 #include "HeterogeneousHGCalEERecHitProducer.h"
-#include "HGCalRecHitKernelWrappers.h"
+#include "HeterogeneousProducerAcquireWrapper.h"
 
 HeterogeneousHGCalEERecHitsProd::HeterogeneousHGCalEERecHitsProd(const edm::ParameterSet& ps):
   token_(consumes<HGCUncalibratedRecHitCollection>(ps.getParameter<edm::InputTag>("HGCEEUncalibRecHitsTok")))
@@ -19,10 +19,9 @@ void HeterogeneousHGCalEERecHitsProd::acquire(edm::Event const& event, edm::Even
   const auto &hits_ee = *handle_ee_;
   handle_size_ = hits_ee.size();
 
-  //call 'set()' here through a templated 'geometry_wrapper' stored next to kernel_manager_wrapper()
-  //the same wrapper should work for all producers, ideally even for the Digi phase
-
-  rechits_raw_ = kernel_manager_wrapper<HGCUncalibratedRecHit, HGCRecHit>(hits_ee, ctx);
+  HeterogeneousProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit> acq_wrap(hits_ee, setup, ctx);
+  acq_wrap.run();
+  rechits_raw_ = acq_wrap.get_output_collection();
 }
 
 void HeterogeneousHGCalEERecHitsProd::produce(edm::Event& event, const edm::EventSetup& setup)
