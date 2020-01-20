@@ -1,6 +1,17 @@
 import FWCore.ParameterSet.Config as cms
 
-process = cms.Process("TEST")
+enableGPU = True
+
+from Configuration.ProcessModifiers.gpu_cff import gpu
+process = cms.Process("TEST", gpu) if enableGPU else cms.Process("TEST")
+process.load("FWCore.MessageService.MessageLogger_cfi")
+process.load('Configuration.StandardSequences.Services_cff')
+process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
+process.load('Configuration.StandardSequences.MagneticField_cff')
+process.load('Configuration.EventContent.EventContent_cff')
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+process.load('Configuration.Geometry.GeometryExtended2026D46Reco_cff')
+process.load("HeterogeneousCore.CUDAServices.CUDAService_cfi")
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32( 2 ))
@@ -18,14 +29,16 @@ process.options = cms.untracked.PSet(
 
 process.HeterogeneousHGCalEERecHits =  cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
                                                       HGCEEUncalibRecHitsTok =  cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'));
+"""
 process.HeterogeneousHGCalHEFRecHits = cms.EDProducer('HeterogeneousHGCalHEFRecHitsProd',
                                                       HGCHEFUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEFUncalibRecHits'));
 process.HeterogeneousHGCalHEBRecHits = cms.EDProducer('HeterogeneousHGCalHEBRecHitsProd',
                                                       HGCHEBUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEBUncalibRecHits'));
-
+"""
 fNameOut = 'out'
 #convert this to a task!!!!!
-process.path = cms.Path( process.HeterogeneousHGCalEERecHits * process.HeterogeneousHGCalHEFRecHits * process.HeterogeneousHGCalHEBRecHits )
+#process.path = cms.Path( process.HeterogeneousHGCalEERecHits * process.HeterogeneousHGCalHEFRecHits * process.HeterogeneousHGCalHEBRecHits)
+process.path = cms.Path( process.HeterogeneousHGCalEERecHits )
 process.out = cms.OutputModule("PoolOutputModule", 
                                fileName = cms.untracked.string(fNameOut+'.root'))
 process.outpath = cms.EndPath(process.out)

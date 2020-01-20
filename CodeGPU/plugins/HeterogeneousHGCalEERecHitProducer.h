@@ -9,7 +9,6 @@
 #include "FWCore/Framework/interface/stream/EDProducer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/Exception.h"
-#include "HeterogeneousCore/CUDAUtilities/interface/cudaCheck.h"
 #include "DataFormats/HGCRecHit/interface/HGCRecHit.h"
 #include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
 #include "DataFormats/ForwardDetId/interface/HGCSiliconDetId.h"
@@ -20,6 +19,9 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 #include "HeterogeneousCore/CUDACore/interface/CUDAScopedContext.h"
+#include "HeterogeneousCore/CUDACore/interface/CUDAContextState.h"
+#include "HeterogeneousCore/CUDAServices/interface/CUDAService.h"
+#include "HeterogeneousCore/CUDAUtilities/interface/cudaCheck.h"
 
 #include "Utils.h"
 
@@ -38,8 +40,8 @@ class HeterogeneousHGCalEERecHitsProd: public edm::stream::EDProducer<edm::Exter
   edm::Handle<HGCeeUncalibratedRecHitCollection> handle_ee_; 
   size_t handle_size_;
 
-  edm::SortedCollection<HGCRecHit> rechits_raw_;
-  std::unique_ptr< edm::SortedCollection<HGCRecHit> > rechits_;
+  HGCeeRecHitCollection rechits_raw_;
+  std::unique_ptr< HGCeeRecHitCollection > rechits_;
   CUDAContextState ctxState_;
 };
 
