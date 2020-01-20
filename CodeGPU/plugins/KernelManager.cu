@@ -46,6 +46,8 @@ void KernelManagerHGCalRecHit::run_kernels()
   assign_and_transfer_to_device();
   //the below part will be activated as soon as my types actually have a detector id
   /*
+=======
+>>>>>>> b5bfc7e2f47f926abb3dcd21cdf5e2094e53dd3f
   if(dtype_ == DetId::HGCalEE)
     {
       ee_step1_wrapper();
@@ -64,6 +66,7 @@ void KernelManagerHGCalRecHit::run_kernels()
       reuse_device_pointers();  
       to_rechit_wrapper();
     }
+<<<<<<< HEAD
   */
   transfer_to_host_and_synchronize();
 }

@@ -1,4 +1,5 @@
 #include "HeterogeneousHGCalEERecHitProducer.h"
+<<<<<<< HEAD
 #include "HeterogeneousProducerAcquireWrapper.h"
 
 HeterogeneousHGCalEERecHitsProd::HeterogeneousHGCalEERecHitsProd(const edm::ParameterSet& ps):

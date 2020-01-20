@@ -17,6 +17,10 @@ class HGCUncalibratedRecHit_GPU {
 };
 
 /*
+=======
+#include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
+
+>>>>>>> b5bfc7e2f47f926abb3dcd21cdf5e2094e53dd3f
 __global__
 void ee_step1(HGCUncalibratedRecHit *__restrict__ dst, HGCUncalibratedRecHit *__restrict__ src, size_t length);
 __global__
@@ -25,6 +29,7 @@ __global__
 void heb_step1(HGCUncalibratedRecHit *__restrict__ dst, HGCUncalibratedRecHit *__restrict__ src, size_t length);
 __global__
 void to_rechit(HGCRecHit *__restrict__ dst, HGCUncalibratedRecHit *__restrict__ src, size_t length);
+<<<<<<< HEAD
 */
 __global__
 void ee_step1(HGCUncalibratedRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length);

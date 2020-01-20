@@ -39,6 +39,8 @@ void to_rechit(HGCRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__res
 }
 
 /*
+=======
+>>>>>>> b5bfc7e2f47f926abb3dcd21cdf5e2094e53dd3f
 //declared as extern in DataFormats/CaloRecHit/interface/CaloRecHit.h
 #ifdef __CUDA_ARCH__
 __constant__ uint32_t calo_rechit_masks[] = {0x00000000u, 0x00000001u, 0x00000003u, 0x00000007u, 0x0000000fu, 0x0000001fu,
@@ -48,4 +50,5 @@ __constant__ uint32_t calo_rechit_masks[] = {0x00000000u, 0x00000001u, 0x0000000
 					     0x00ffffffu, 0x01ffffffu, 0x03ffffffu, 0x07ffffffu, 0x0fffffffu, 0x1fffffffu,
 					     0x3fffffffu, 0x7fffffffu, 0xffffffffu};
 #endif
+<<<<<<< HEAD
 */
