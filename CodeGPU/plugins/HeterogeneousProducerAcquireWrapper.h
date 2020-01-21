@@ -1,5 +1,5 @@
-#ifndef HGCalRecHitKernelWrappers_h
-#define HGCalRecHitKernelWrappers_h
+#ifndef _HGCALRECHITKERNELWRAPPERS_H_
+#define _HGCALRECHITKERNELWRAPPERS_H_
 
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Utilities/interface/Exception.h"
@@ -21,27 +21,20 @@
 #include "HeterogeneousCore/CUDAUtilities/interface/host_unique_ptr.h"
 
 #include "Utils.h"
-
-class HeterogeneousProducerConstantData {
-private:
-float a;
-std::vector<double> b;
-};
+#include "Types.h"
 
 template <class T_IN, class T_OUT>
 class HeterogeneousProducerAcquireWrapper {
  public:
   HeterogeneousProducerAcquireWrapper(const edm::SortedCollection<T_IN>&, const edm::EventSetup&);
+  ~HeterogeneousProducerAcquireWrapper();
   edm::SortedCollection<T_OUT> get_output_collection();
   void run();
-  //void run(const CUDAScopedContextAcquire&);
+  void run(const CUDAScopedContextAcquire&);
 
  private:
-  class HeterogeneousProducerSoA {
-  private:
-    std::vector<float> a;
-    std::vector<double> b;
-  };
+  HGCUncalibratedRecHitSoA *old_soa_;
+  HGCRecHitSoA *new_soa_;
 
   //methods
   void set_geometry_(const edm::EventSetup&);
@@ -56,9 +49,8 @@ class HeterogeneousProducerAcquireWrapper {
   //data processing
   size_t size_;
   edm::SortedCollection<T_IN> hits_;
-  HeterogeneousProducerSoA data_;
   edm::SortedCollection<T_OUT> out_data_;
   DetId::Detector det_;
 };
 							
-#endif //HGCalRecHitKernelsWrappers_h
+#endif // _HGCALRECHITKERNELWRAPPERS_H_

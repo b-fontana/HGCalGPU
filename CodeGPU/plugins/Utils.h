@@ -8,8 +8,8 @@
 
 enum detectortype { hgcee=0, hgchef=1, hgcheb=2, ntypes=3};
 
-typedef edm::SortedCollection<HGCUncalibratedRecHit_GPU> HGCUncalibratedRecHitCollection_GPU;
-typedef edm::SortedCollection<HGCRecHit_GPU> HGCRecHitCollection_GPU;
+typedef edm::SortedCollection<HGCUncalibratedRecHitSoA> HGCUncalibratedRecHitCollectionSoA;
+typedef edm::SortedCollection<HGCRecHitSoA> HGCRecHitCollectionSoA;
 
 template <typename T>
 HGCRecHitCollection pointer_to_sorted_collection(T*, const size_t&);

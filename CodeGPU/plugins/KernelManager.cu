@@ -2,16 +2,14 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#include "DataFormats/DetId/interface/DetId.h"
-
 #include "KernelManager.h"
 #include "HGCalRecHitKernelImpl.cuh"
 
 dim3 nblocks_(1);
 dim3 nthreads_(32);
 
-KernelManagerHGCalRecHit::KernelManagerHGCalRecHit(KernelManagerData<HGCUncalibratedRecHit_GPU, HGCRecHit_GPU> data):
-  data_(data)
+KernelManagerHGCalRecHit::KernelManagerHGCalRecHit(KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data, const DetId::Detector& dtype):
+  data_(data), dtype_(dtype)
 {
   sbytes_ = shits_ * sizeof(data_.h_in_[0]);
 }
@@ -36,7 +34,7 @@ void KernelManagerHGCalRecHit::transfer_to_host_and_synchronize()
 
 void KernelManagerHGCalRecHit::reuse_device_pointers()
 {
-  std::swap(data_.d_1_, data_.d_2_); 
+  //std::swap(data_.d_1_, data_.d_2_); 
   cudaCheck( cudaDeviceSynchronize() );
   cudaCheck( cudaGetLastError() );
 }
@@ -44,10 +42,8 @@ void KernelManagerHGCalRecHit::reuse_device_pointers()
 void KernelManagerHGCalRecHit::run_kernels()
 {
   assign_and_transfer_to_device();
-  //the below part will be activated as soon as my types actually have a detector id
+ 
   /*
-=======
->>>>>>> b5bfc7e2f47f926abb3dcd21cdf5e2094e53dd3f
   if(dtype_ == DetId::HGCalEE)
     {
       ee_step1_wrapper();
@@ -66,8 +62,8 @@ void KernelManagerHGCalRecHit::run_kernels()
       reuse_device_pointers();  
       to_rechit_wrapper();
     }
-<<<<<<< HEAD
   */
+
   transfer_to_host_and_synchronize();
 }
 
@@ -95,7 +91,7 @@ void KernelManagerHGCalRecHit::to_rechit_wrapper()
   cudaCheck( cudaGetLastError() );
 }
 
-HGCRecHit_GPU* KernelManagerHGCalRecHit::get_output()
+HGCRecHitSoA* KernelManagerHGCalRecHit::get_output()
 {
   return data_.h_out_;
 }

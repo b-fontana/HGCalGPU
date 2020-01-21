@@ -3,24 +3,10 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-
-class HGCRecHit_GPU {
-  float energy;
-  float time;
-  typedef int key_type;
-};
-
-class HGCUncalibratedRecHit_GPU {
-  float amplitude;
-  float pedestal;
-  typedef int key_type;
-};
+#include "Types.h"
 
 /*
 =======
-#include "DataFormats/HGCRecHit/interface/HGCRecHitCollections.h"
-
->>>>>>> b5bfc7e2f47f926abb3dcd21cdf5e2094e53dd3f
 __global__
 void ee_step1(HGCUncalibratedRecHit *__restrict__ dst, HGCUncalibratedRecHit *__restrict__ src, size_t length);
 __global__
@@ -29,15 +15,14 @@ __global__
 void heb_step1(HGCUncalibratedRecHit *__restrict__ dst, HGCUncalibratedRecHit *__restrict__ src, size_t length);
 __global__
 void to_rechit(HGCRecHit *__restrict__ dst, HGCUncalibratedRecHit *__restrict__ src, size_t length);
-<<<<<<< HEAD
 */
 __global__
-void ee_step1(HGCUncalibratedRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length);
+void ee_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length);
 __global__
-void hef_step1(HGCUncalibratedRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length);
+void hef_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length);
 __global__
-void heb_step1(HGCUncalibratedRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length);
+void heb_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length);
 __global__
-void to_rechit(HGCRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length);
+void to_rechit(HGCRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length);
 
 #endif /* _HGCALRECHITKERNELIMPL_H_ */

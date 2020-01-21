@@ -1,20 +1,11 @@
 #ifndef _KERNELMANAGER_H
 #define _KERNELMANAGER_H
 
-//#include "FWCore/Utilities/interface/Exception.h"
-//#include "DataFormats/HcalDetId/interface/HcalSubdetector.h"
-//#include "DataFormats/DetId/interface/DetId.h"
-//#include "DataFormats/HGCRecHit_GPU/interface/HGCRecHitCollections.h"
-//#include "DataFormats/​HGCRecHit_GPU/​interface/​HGCRecHit.h"
+#include "DataFormats/DetId/interface/DetId.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/cudaCompat.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/cudaCheck.h"
-//#include "HeterogeneousCore/CUDACore/interface/CUDAScopedContext.h"
-//#include "HeterogeneousCore/CUDAUtilities/interface/host_noncached_unique_ptr.h"
-//#include "HeterogeneousCore/CUDAUtilities/interface/device_unique_ptr.h"
-//#include "HeterogeneousCore/CUDAUtilities/interface/host_unique_ptr.h"
-//#include "Utils.h"
-
 #include "HGCalRecHitKernelImpl.cuh"
+#include "Types.h"
 
 #include <vector>
 #include <algorithm> //std::swap  
@@ -57,13 +48,13 @@ protected:
 //the class assumes that the sizes of the arrays pointed to and the size of the collection are constant
 class KernelManagerHGCalRecHit: private KernelManagerBase {
  public:
-  explicit KernelManagerHGCalRecHit(KernelManagerData<HGCUncalibratedRecHit_GPU, HGCRecHit_GPU>);
+  explicit KernelManagerHGCalRecHit(KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>, const DetId::Detector &);
   ~KernelManagerHGCalRecHit();
   void run_kernels();
-  HGCRecHit_GPU* get_output();
+  HGCRecHitSoA* get_output();
 
  private:
-  friend class KernelManagerData<HGCUncalibratedRecHit_GPU, HGCRecHit_GPU>;
+  friend class KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>;
 
   void ee_step1_wrapper();
   void hef_step1_wrapper();
@@ -74,9 +65,9 @@ class KernelManagerHGCalRecHit: private KernelManagerBase {
   void reuse_device_pointers() override;
 
   size_t shits_, sbytes_;
-  //DetId::Detector dtype_;
-  const std::vector<HGCUncalibratedRecHit_GPU> h_oldhits_;
-  KernelManagerData<HGCUncalibratedRecHit_GPU, HGCRecHit_GPU> data_;
+  const DetId::Detector dtype_;
+  const std::vector<HGCUncalibratedRecHitSoA> h_oldhits_;
+  KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data_;
 };
 
 #endif //_KERNELMANAGER_H_

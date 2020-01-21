@@ -3,38 +3,38 @@
 #include "HGCalRecHitKernelImpl.cuh"
 
 __global__
-void ee_step1(HGCUncalibratedRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length)
+void ee_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length)
 {
   for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
-      dst[i] = src[i];
+      dst->amplitude[0] = src->amplitude[0];
     }
 }
 
 __global__
-void hef_step1(HGCUncalibratedRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length)
+void hef_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length)
 {
   for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
-      dst[i] = src[i];
+      dst->amplitude[0] = src->amplitude[0];
     }
 }
 
 __global__
-void heb_step1(HGCUncalibratedRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length)
+void heb_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length)
 {
   for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
-      dst[i] = src[i];
+      dst->amplitude[0] = src->amplitude[0];
     }
 }
 
 __global__
-void to_rechit(HGCRecHit_GPU *__restrict__ dst, HGCUncalibratedRecHit_GPU *__restrict__ src, size_t length)
+void to_rechit(HGCRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length)
 {
   for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
-      //dst[i] = HGCRecHit( src[i].id(), 0. /*energy*/, 0./*time*/ );
+      dst->energy[0] = 2.;
     }
 }
 
