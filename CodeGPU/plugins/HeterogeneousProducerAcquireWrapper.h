@@ -38,7 +38,9 @@ class HeterogeneousProducerAcquireWrapper {
 
   //methods
   void set_geometry_(const edm::EventSetup&);
-
+  template <class U> void allocate_host_(U&, cudautils::host::unique_ptr<float[]>&);
+  template <class U> void allocate_host_(U&, cudautils::host::noncached::unique_ptr<float[]>&); //overload
+  template <class U> void allocate_device_(U&, cudautils::device::unique_ptr<float[]>&);
   template <class U> void convert_collection_data_to_soa_();
   template <class U> void convert_soa_data_to_collection_();
 
@@ -47,7 +49,8 @@ class HeterogeneousProducerAcquireWrapper {
   const HGCalDDDConstants* ddd_;
 
   //data processing
-  size_t size_;
+  size_t nhits_;
+  int stride_;
   edm::SortedCollection<T_IN> hits_;
   edm::SortedCollection<T_OUT> out_data_;
   DetId::Detector det_;

@@ -22,14 +22,14 @@ extern __constant__ uint32_t calo_rechit_masks[];
 template <typename TYPE_IN, typename TYPE_OUT>
   class KernelManagerData {
  public:
-  KernelManagerData(TYPE_IN *h_in, TYPE_IN *d_1, TYPE_IN *d_2,
-		    TYPE_OUT *d_out, TYPE_OUT *h_out):
-  h_in_(h_in), d_1_(d_1), d_2_(d_2), d_out_(d_out), h_out_(h_out) {}
+ KernelManagerData(size_t nhits_, TYPE_IN *h_in_, TYPE_IN *d_1_, TYPE_IN *d_2_, TYPE_OUT *d_out_, TYPE_OUT *h_out_):
+  nhits(nhits_), h_in(h_in_), d_1(d_1_), d_2(d_2_), d_out(d_out_), h_out(h_out_) {}
 
-  TYPE_IN *h_in_;
-  TYPE_IN *d_1_, *d_2_;
-  TYPE_OUT *d_out_;
-  TYPE_OUT *h_out_;
+  size_t nhits;
+  TYPE_IN *h_in;
+  TYPE_IN *d_1, *d_2;
+  TYPE_OUT *d_out;
+  TYPE_OUT *h_out;
 };
 
 class KernelManagerBase {
@@ -64,7 +64,6 @@ class KernelManagerHGCalRecHit: private KernelManagerBase {
   void transfer_to_host_and_synchronize() override;
   void reuse_device_pointers() override;
 
-  size_t shits_, sbytes_;
   const DetId::Detector dtype_;
   const std::vector<HGCUncalibratedRecHitSoA> h_oldhits_;
   KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data_;

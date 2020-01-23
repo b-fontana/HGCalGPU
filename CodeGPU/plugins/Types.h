@@ -20,17 +20,17 @@ public:
   uint32_t *flags;
   uint32_t *aux;
   uint32_t *id;
-  uint32_t size;
+  size_t nbytes;
 };
 
 class HGCRecHitSoA {
  public:
-  uint32_t *id;
   float *energy;
   float *time;
+  uint32_t *id;
   uint32_t *flags;
   uint32_t *flagBits;
-  uint32_t size;
+  size_t nbytes;
 };
 
 #endif /* _TYPES_H_ */
