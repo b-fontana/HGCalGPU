@@ -12,6 +12,7 @@ KernelManagerHGCalRecHit::KernelManagerHGCalRecHit(KernelManagerData<HGCUncalibr
   data_(data), dtype_(dtype)
 {
   nblocks_ = (data_.nhits + nthreads_.x - 1) / nthreads_.x; 
+  printf("%d blocks being launched with %d threads (%d in total).\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x);
 }
 
 KernelManagerHGCalRecHit::~KernelManagerHGCalRecHit()
@@ -20,13 +21,20 @@ KernelManagerHGCalRecHit::~KernelManagerHGCalRecHit()
 
 void KernelManagerHGCalRecHit::assign_and_transfer_to_device()
 {
+  printf("%p\n", (data_.h_in)->amplitude);
+  printf("Number of bytes copied to GPU: %zu\n", (data_.d_1)->nbytes);
+  printf("Address of memory on the GPU: %p\n", (data_.d_1)->amplitude);  
   cudaCheck( cudaMemcpyAsync((data_.d_1)->amplitude, (data_.h_in)->amplitude, (data_.d_1)->nbytes, cudaMemcpyHostToDevice) );
   cudaCheck( cudaDeviceSynchronize() ); //needed because the copy is asynchronous
   cudaCheck( cudaGetLastError() );
+  printf("%p\n", (data_.h_in)->amplitude);
+  printf("Float: %zu, Uint32_t: %zu\n", sizeof(float), sizeof(uint32_t));
+  printf("check\n");
 }
 
 void KernelManagerHGCalRecHit::transfer_to_host_and_synchronize()
 {
+  printf("Number of bytes copied to CPU: %zu\n", (data_.d_out)->nbytes);
   cudaCheck( cudaMemcpyAsync((data_.h_out)->energy, (data_.d_out)->energy, (data_.d_out)->nbytes, cudaMemcpyDeviceToHost) );
   cudaCheck( cudaDeviceSynchronize() );
   cudaCheck( cudaGetLastError() );
@@ -51,6 +59,7 @@ void KernelManagerHGCalRecHit::run_kernels()
       //to_rechit_wrapper();
       std::cout << "to_rechit() end" << std::endl;
     }
+  /*
   else if(dtype_ == DetId::HGCalHSi)
     {
       hef_step1_wrapper();
@@ -63,13 +72,16 @@ void KernelManagerHGCalRecHit::run_kernels()
       reuse_device_pointers();  
       to_rechit_wrapper();
     }
+  */
 
-  transfer_to_host_and_synchronize();
+  //transfer_to_host_and_synchronize();
 }
 
 void KernelManagerHGCalRecHit::ee_step1_wrapper()
 {
+  printf("Running ee kernel with: %zu hits.\n", data_.nhits);
   ee_step1<<<nblocks_,nthreads_>>>(data_.d_2, data_.d_1, data_.nhits); 
+  cudaCheck( cudaDeviceSynchronize() );
   cudaCheck( cudaGetLastError() );
 }
 

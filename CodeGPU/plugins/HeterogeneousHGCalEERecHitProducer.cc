@@ -1,5 +1,5 @@
 #include "HeterogeneousHGCalEERecHitProducer.h"
-#include "HeterogeneousProducerAcquireWrapper.h"
+#include "HeterogeneousHGCalProducerAcquireWrapper.h"
 
 HeterogeneousHGCalEERecHitsProd::HeterogeneousHGCalEERecHitsProd(const edm::ParameterSet& ps):
   token_(consumes<HGCUncalibratedRecHitCollection>(ps.getParameter<edm::InputTag>("HGCEEUncalibRecHitsTok")))
@@ -18,7 +18,7 @@ void HeterogeneousHGCalEERecHitsProd::acquire(edm::Event const& event, edm::Even
   const auto &hits_ee = *handle_ee_;
   handle_size_ = hits_ee.size();
 
-  HeterogeneousProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit> acq_wrap(hits_ee, setup);
+  HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit> acq_wrap(hits_ee, setup);
   acq_wrap.run();
   rechits_raw_ = acq_wrap.get_output_collection();
 }

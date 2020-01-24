@@ -5,16 +5,24 @@
 __global__
 void ee_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length)
 {
-  for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
+  if(blockDim.x * blockIdx.x + threadIdx.x == 0) 
+    {
+      //printf("%p\n", src->amplitude);
+      //__syncthreads();
+      //printf("%f\n", src->amplitude[0]);
+    }
+  /*
+  for (unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
       dst->amplitude[0] = src->amplitude[0];
     }
+  */
 }
 
 __global__
 void hef_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length)
 {
-  for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
+  for (unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
       dst->amplitude[0] = src->amplitude[0];
     }
@@ -23,7 +31,7 @@ void hef_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHit
 __global__
 void heb_step1(HGCUncalibratedRecHitSoA *__restrict__ dst, HGCUncalibratedRecHitSoA *__restrict__ src, size_t length)
 {
-  for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
+  for (unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
       dst->amplitude[0] = src->amplitude[0];
     }

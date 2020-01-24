@@ -54,7 +54,7 @@ class KernelManagerHGCalRecHit: private KernelManagerBase {
   HGCRecHitSoA* get_output();
 
  private:
-  friend class KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>;
+  //friend class KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>;
 
   void ee_step1_wrapper();
   void hef_step1_wrapper();

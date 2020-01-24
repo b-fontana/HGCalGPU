@@ -1,5 +1,5 @@
-#ifndef _HGCALRECHITKERNELWRAPPERS_H_
-#define _HGCALRECHITKERNELWRAPPERS_H_
+#ifndef _HETEROGENEOUSHGCALPRODUCERACQUIREWRAPPER_H_
+#define _HETEROGENEOUSHGCALPRODUCERACQUIREWRAPPER_H_
 
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Utilities/interface/Exception.h"
@@ -24,10 +24,10 @@
 #include "Types.h"
 
 template <class T_IN, class T_OUT>
-class HeterogeneousProducerAcquireWrapper {
+class HeterogeneousHGCalProducerAcquireWrapper {
  public:
-  HeterogeneousProducerAcquireWrapper(const edm::SortedCollection<T_IN>&, const edm::EventSetup&);
-  ~HeterogeneousProducerAcquireWrapper();
+  HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>&, const edm::EventSetup&);
+  ~HeterogeneousHGCalProducerAcquireWrapper();
   edm::SortedCollection<T_OUT> get_output_collection();
   void run();
   void run(const CUDAScopedContextAcquire&);
@@ -38,9 +38,9 @@ class HeterogeneousProducerAcquireWrapper {
 
   //methods
   void set_geometry_(const edm::EventSetup&);
-  template <class U> void allocate_host_(U&, cudautils::host::unique_ptr<float[]>&);
-  template <class U> void allocate_host_(U&, cudautils::host::noncached::unique_ptr<float[]>&); //overload
-  template <class U> void allocate_device_(U&, cudautils::device::unique_ptr<float[]>&);
+  template <class U> void allocate_host_(U*, cudautils::host::unique_ptr<U[]>&);
+  template <class U> void allocate_host_(U*, cudautils::host::noncached::unique_ptr<U[]>&); //overload
+  template <class U> void allocate_device_(U*, cudautils::device::unique_ptr<U[]>&);
   template <class U> void convert_collection_data_to_soa_();
   template <class U> void convert_soa_data_to_collection_();
 
@@ -50,10 +50,10 @@ class HeterogeneousProducerAcquireWrapper {
 
   //data processing
   size_t nhits_;
-  int stride_;
+  unsigned int stride_;
   edm::SortedCollection<T_IN> hits_;
   edm::SortedCollection<T_OUT> out_data_;
   DetId::Detector det_;
 };
 							
-#endif // _HGCALRECHITKERNELWRAPPERS_H_
+#endif // _HETEROGENEOUSHGCALPRODUCERACQUIREWRAPPER_H_
