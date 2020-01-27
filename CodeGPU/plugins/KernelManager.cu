@@ -22,8 +22,8 @@ KernelManagerHGCalRecHit::~KernelManagerHGCalRecHit()
 void KernelManagerHGCalRecHit::assign_and_transfer_to_device()
 {
   printf("%p\n", (data_.h_in)->amplitude);
-  printf("Number of bytes copied to GPU: %zu\n", (data_.d_1)->nbytes);
-  printf("Address of memory on the GPU: %p\n", (data_.d_1)->amplitude);  
+  //printf("Number of bytes copied to GPU: %zu\n", (data_.d_1)->nbytes);
+  //printf("Address of memory on the GPU: %p\n", (data_.d_1)->amplitude);  
   cudaCheck( cudaMemcpyAsync((data_.d_1)->amplitude, (data_.h_in)->amplitude, (data_.d_1)->nbytes, cudaMemcpyHostToDevice) );
   cudaCheck( cudaDeviceSynchronize() ); //needed because the copy is asynchronous
   cudaCheck( cudaGetLastError() );

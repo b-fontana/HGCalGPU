@@ -33,20 +33,21 @@ class HeterogeneousHGCalProducerAcquireWrapper {
   void run(const CUDAScopedContextAcquire&);
 
  private:
-  HGCUncalibratedRecHitSoA *old_soa_;
-  HGCRecHitSoA *new_soa_;
+  HGCUncalibratedRecHitSoA *old_soa_ = nullptr, *d_oldhits_ = nullptr, *d_newhits_ = nullptr;
+  HGCRecHitSoA *new_soa_ = nullptr, *d_newhits_final_ = nullptr, *h_newhits_ = nullptr;
 
   //methods
   void set_geometry_(const edm::EventSetup&);
-  template <class U> void allocate_host_(U*, cudautils::host::unique_ptr<U[]>&);
-  template <class U> void allocate_host_(U*, cudautils::host::noncached::unique_ptr<U[]>&); //overload
-  template <class U> void allocate_device_(U*, cudautils::device::unique_ptr<U[]>&);
+  void allocate_host_(HGCUncalibratedRecHitSoA*&, cudautils::host::noncached::unique_ptr<HGCUncalibratedRecHitSoA[]>&);
+  void allocate_host_(HGCRecHitSoA*&, cudautils::host::unique_ptr<HGCRecHitSoA[]>&);
+  void allocate_device_(HGCUncalibratedRecHitSoA*&, cudautils::device::unique_ptr<HGCUncalibratedRecHitSoA[]>&);
+  void allocate_device_(HGCRecHitSoA*&, cudautils::device::unique_ptr<HGCRecHitSoA[]>&);
   template <class U> void convert_collection_data_to_soa_();
   template <class U> void convert_soa_data_to_collection_();
 
   //geometry
   std::unique_ptr<hgcal::RecHitTools> tools_;
-  const HGCalDDDConstants* ddd_;
+  const HGCalDDDConstants* ddd_ = nullptr;
 
   //data processing
   size_t nhits_;
