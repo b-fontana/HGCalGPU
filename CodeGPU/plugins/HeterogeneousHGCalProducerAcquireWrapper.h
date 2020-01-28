@@ -38,10 +38,10 @@ class HeterogeneousHGCalProducerAcquireWrapper {
 
   //methods
   void set_geometry_(const edm::EventSetup&);
-  void allocate_host_(HGCUncalibratedRecHitSoA*&, cudautils::host::noncached::unique_ptr<HGCUncalibratedRecHitSoA[]>&);
-  void allocate_host_(HGCRecHitSoA*&, cudautils::host::unique_ptr<HGCRecHitSoA[]>&);
-  void allocate_device_(HGCUncalibratedRecHitSoA*&, cudautils::device::unique_ptr<HGCUncalibratedRecHitSoA[]>&);
-  void allocate_device_(HGCRecHitSoA*&, cudautils::device::unique_ptr<HGCRecHitSoA[]>&);
+  void allocate_host_(HGCUncalibratedRecHitSoA*&, cudautils::host::noncached::unique_ptr<float[]>&);
+  void allocate_host_(HGCRecHitSoA*&, cudautils::host::unique_ptr<float[]>&);
+  void allocate_device_(HGCUncalibratedRecHitSoA*&, cudautils::device::unique_ptr<float[]>&);
+  void allocate_device_(HGCRecHitSoA*&, cudautils::device::unique_ptr<float[]>&);
   template <class U> void convert_collection_data_to_soa_();
   template <class U> void convert_soa_data_to_collection_();
 

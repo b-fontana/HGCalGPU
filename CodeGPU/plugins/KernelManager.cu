@@ -21,20 +21,13 @@ KernelManagerHGCalRecHit::~KernelManagerHGCalRecHit()
 
 void KernelManagerHGCalRecHit::assign_and_transfer_to_device()
 {
-  printf("%p\n", (data_.h_in)->amplitude);
-  //printf("Number of bytes copied to GPU: %zu\n", (data_.d_1)->nbytes);
-  //printf("Address of memory on the GPU: %p\n", (data_.d_1)->amplitude);  
   cudaCheck( cudaMemcpyAsync((data_.d_1)->amplitude, (data_.h_in)->amplitude, (data_.d_1)->nbytes, cudaMemcpyHostToDevice) );
   cudaCheck( cudaDeviceSynchronize() ); //needed because the copy is asynchronous
   cudaCheck( cudaGetLastError() );
-  printf("%p\n", (data_.h_in)->amplitude);
-  printf("Float: %zu, Uint32_t: %zu\n", sizeof(float), sizeof(uint32_t));
-  printf("check\n");
 }
 
 void KernelManagerHGCalRecHit::transfer_to_host_and_synchronize()
 {
-  printf("Number of bytes copied to CPU: %zu\n", (data_.d_out)->nbytes);
   cudaCheck( cudaMemcpyAsync((data_.h_out)->energy, (data_.d_out)->energy, (data_.d_out)->nbytes, cudaMemcpyDeviceToHost) );
   cudaCheck( cudaDeviceSynchronize() );
   cudaCheck( cudaGetLastError() );
@@ -54,7 +47,7 @@ void KernelManagerHGCalRecHit::run_kernels()
   if(dtype_ == DetId::HGCalEE)
     {
       std::cout << "to_rechit() start" << std::endl;
-      //ee_step1_wrapper();
+      ee_step1_wrapper();
       //reuse_device_pointers();
       //to_rechit_wrapper();
       std::cout << "to_rechit() end" << std::endl;
@@ -80,7 +73,28 @@ void KernelManagerHGCalRecHit::run_kernels()
 void KernelManagerHGCalRecHit::ee_step1_wrapper()
 {
   printf("Running ee kernel with: %zu hits.\n", data_.nhits);
-  ee_step1<<<nblocks_,nthreads_>>>(data_.d_2, data_.d_1, data_.nhits); 
+  ee_step1<<<nblocks_,nthreads_>>>( (data_.d_2)->amplitude,    (data_.d_1)->amplitude, 
+				    (data_.d_2)->pedestal,     (data_.d_1)->pedestal,
+				    (data_.d_2)->jitter,       (data_.d_1)->jitter,
+				    (data_.d_2)->chi2,         (data_.d_1)->chi2,
+				    (data_.d_2)->OOTamplitude, (data_.d_1)->OOTamplitude,
+				    (data_.d_2)->OOTchi2,      (data_.d_1)->OOTchi2,
+				    (data_.d_2)->flags,        (data_.d_1)->flags,
+				    (data_.d_2)->aux,          (data_.d_1)->aux,
+				    (data_.d_2)->id,           (data_.d_1)->id,
+				    data_.nhits); 
+  cudaCheck( cudaDeviceSynchronize() );
+  cudaCheck( cudaGetLastError() );
+  ee_step2<<<nblocks_,nthreads_>>>( (data_.d_2)->amplitude,    (data_.d_1)->amplitude, 
+				    (data_.d_2)->pedestal,     (data_.d_1)->pedestal,
+				    (data_.d_2)->jitter,       (data_.d_1)->jitter,
+				    (data_.d_2)->chi2,         (data_.d_1)->chi2,
+				    (data_.d_2)->OOTamplitude, (data_.d_1)->OOTamplitude,
+				    (data_.d_2)->OOTchi2,      (data_.d_1)->OOTchi2,
+				    (data_.d_2)->flags,        (data_.d_1)->flags,
+				    (data_.d_2)->aux,          (data_.d_1)->aux,
+				    (data_.d_2)->id,           (data_.d_1)->id,
+				    data_.nhits); 
   cudaCheck( cudaDeviceSynchronize() );
   cudaCheck( cudaGetLastError() );
 }
