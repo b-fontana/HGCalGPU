@@ -133,39 +133,36 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::run()
   old_soa_ = new HGCUncalibratedRecHitSoA();
   cudautils::host::noncached::unique_ptr<float[]> h_float_1;
   allocate_host_(old_soa_, h_float_1);
+
   convert_collection_data_to_soa_<HGCUncalibratedRecHit>();
+
   d_oldhits_ = new HGCUncalibratedRecHitSoA();
   cudautils::device::unique_ptr<float[]> d_float_2;
-  std::cout << "check0 2"  << std::endl;
   allocate_device_(d_oldhits_, d_float_2);
-  std::cout << "check1" << std::endl;
+
   d_newhits_ = new HGCUncalibratedRecHitSoA();
   cudautils::device::unique_ptr<float[]> d_float_3;
   allocate_device_(d_newhits_, d_float_3);
-  std::cout << "check2" << std::endl;
+
   d_newhits_final_ = new HGCRecHitSoA();
   cudautils::device::unique_ptr<float[]> d_float_4;
   allocate_device_(d_newhits_final_, d_float_4);
-  std::cout << "check3" << std::endl;
+
   h_newhits_ = new HGCRecHitSoA();
   cudautils::host::unique_ptr<float[]> h_float_2;
   allocate_host_(h_newhits_, h_float_2);
-  std::cout << "check4" << std::endl;
-  /*
+
   assert(old_soa_->nbytes == d_oldhits_->nbytes);
   assert(old_soa_->nbytes == d_newhits_->nbytes);
   assert(d_newhits_final_->nbytes == h_newhits_->nbytes);
-  */
-  std::cout << "check5" << std::endl;
+
   KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> kmdata(nhits_, old_soa_, d_oldhits_, d_newhits_, d_newhits_final_, h_newhits_);
-  std::cout << "check6" << std::endl;
+
   DetId::Detector dtype = DetId::Detector::HGCalEE;
   KernelManagerHGCalRecHit kernel_manager(kmdata, dtype);
-  std::cout << "before run_kernels()" << std::endl;
-  kernel_manager.run_kernels();
-  std::cout << "after run_kernels()" << std::endl;
-  new_soa_ = kernel_manager.get_output();
 
+  kernel_manager.run_kernels();
+  new_soa_ = kernel_manager.get_output();
   convert_soa_data_to_collection_<HGCRecHit>();
 }
 
