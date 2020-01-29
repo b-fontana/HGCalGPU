@@ -1,8 +1,10 @@
 import FWCore.ParameterSet.Config as cms
 
 enableGPU = True
-
 from Configuration.ProcessModifiers.gpu_cff import gpu
+
+from RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi import HGCalRecHit
+
 process = cms.Process("TEST", gpu) if enableGPU else cms.Process("TEST")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.load('Configuration.StandardSequences.Services_cff')
@@ -28,7 +30,9 @@ process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool( False ))
 
 process.HeterogeneousHGCalEERecHits =  cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
-                                                      HGCEEUncalibRecHitsTok =  cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'));
+                                                      HGCEEUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'),
+                                                      HGCEE_keV2DIGI = HGCalRecHit.__dict__['HGCEE_keV2DIGI']);
+
 """
 process.HeterogeneousHGCalHEFRecHits = cms.EDProducer('HeterogeneousHGCalHEFRecHitsProd',
                                                       HGCHEFUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCHEFUncalibRecHits'));

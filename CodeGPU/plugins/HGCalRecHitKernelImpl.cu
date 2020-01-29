@@ -3,8 +3,10 @@
 #include "HGCalRecHitKernelImpl.cuh"
 
 __global__
-void ee_step1(float *__restrict__ dst_amplitude, float *__restrict__ dst_pedestal, float *__restrict__ dst_jitter,  float *__restrict__ dst_chi2, float *__restrict__ dst_OOTamplitude, float *__restrict__ dst_OOTchi2, uint32_t *__restrict__ dst_flags, uint32_t *__restrict__ dst_aux, uint32_t *__restrict__ dst_id, float *__restrict__ src_amplitude, float *__restrict__ src_pedestal, float *__restrict__ src_jitter,  float *__restrict__ src_chi2, float *__restrict__ src_OOTamplitude, float *__restrict__ src_OOTchi2, uint32_t *__restrict__ src_flags, uint32_t *__restrict__ src_aux, uint32_t *__restrict__ src_id, size_t length)
+void ee_step1(float *__restrict__ dst_amplitude, float *__restrict__ dst_pedestal, float *__restrict__ dst_jitter,  float *__restrict__ dst_chi2, float *__restrict__ dst_OOTamplitude, float *__restrict__ dst_OOTchi2, uint32_t *__restrict__ dst_flags, uint32_t *__restrict__ dst_aux, uint32_t *__restrict__ dst_id, float *__restrict__ src_amplitude, float *__restrict__ src_pedestal, float *__restrict__ src_jitter,  float *__restrict__ src_chi2, float *__restrict__ src_OOTamplitude, float *__restrict__ src_OOTchi2, uint32_t *__restrict__ src_flags, uint32_t *__restrict__ src_aux, uint32_t *__restrict__ src_id, size_t length, double cdata)
 {
+  if(blockDim.x * blockIdx.x + threadIdx.x == 0)
+    printf("Constant data: %f\n", cdata);
   for (unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
       dst_amplitude[i] = src_amplitude[i];

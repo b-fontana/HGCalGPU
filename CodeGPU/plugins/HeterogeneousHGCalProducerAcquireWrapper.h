@@ -26,7 +26,7 @@
 template <class T_IN, class T_OUT>
 class HeterogeneousHGCalProducerAcquireWrapper {
  public:
-  HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>&, const edm::EventSetup&);
+  HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>&, const edm::EventSetup&, const double&, const DetId::Detector&);
   ~HeterogeneousHGCalProducerAcquireWrapper();
   edm::SortedCollection<T_OUT> get_output_collection();
   void run();
@@ -53,6 +53,8 @@ class HeterogeneousHGCalProducerAcquireWrapper {
   size_t nhits_;
   unsigned int stride_;
   edm::SortedCollection<T_IN> hits_;
+  double cdata_;
+  DetId::Detector dtype_;
   edm::SortedCollection<T_OUT> out_data_;
   DetId::Detector det_;
 };

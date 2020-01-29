@@ -10,7 +10,7 @@
 #include "Types.h"
 
 template <class T_IN, class T_OUT>
-HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>& hits, const edm::EventSetup& setup)
+HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>& hits, const edm::EventSetup& setup, const double& cdata, const DetId::Detector& dtype): cdata_(cdata), dtype_(dtype)
 {
   nhits_ = hits.size();
   if (nhits_ == 0)
@@ -156,10 +156,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::run()
   assert(old_soa_->nbytes == d_newhits_->nbytes);
   assert(d_newhits_final_->nbytes == h_newhits_->nbytes);
 
-  KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> kmdata(nhits_, old_soa_, d_oldhits_, d_newhits_, d_newhits_final_, h_newhits_);
-
-  DetId::Detector dtype = DetId::Detector::HGCalEE;
-  KernelManagerHGCalRecHit kernel_manager(kmdata, dtype);
+  KernelConstantData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> kcdata(cdata_);
+  KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> kmdata(nhits_, old_soa_, d_oldhits_, d_newhits_, d_newhits_final_, h_newhits_);
+  KernelManagerHGCalRecHit kernel_manager(kmdata, kcdata, dtype_);
 
   kernel_manager.run_kernels();
   new_soa_ = kernel_manager.get_output();

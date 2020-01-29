@@ -8,8 +8,8 @@
 dim3 nblocks_;
 constexpr dim3 nthreads_(256);
 
-KernelManagerHGCalRecHit::KernelManagerHGCalRecHit(KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data, const DetId::Detector& dtype):
-  data_(data), dtype_(dtype)
+KernelManagerHGCalRecHit::KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data, const KernelConstantData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>& cdata, const DetId::Detector& dtype):
+  data_(data), cdata_(cdata), dtype_(dtype)
 {
   nblocks_ = (data_.nhits + nthreads_.x - 1) / nthreads_.x; 
   printf("%d blocks being launched with %d threads (%d in total).\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x);
@@ -89,7 +89,8 @@ void KernelManagerHGCalRecHit::ee_step1_wrapper()
 				    (data_.d_1)->flags,
 				    (data_.d_1)->aux,
 				    (data_.d_1)->id,
-				    data_.nhits);
+				    data_.nhits,
+				    cdata_);
   cudaCheck( cudaDeviceSynchronize() );
   cudaCheck( cudaGetLastError() );
 }

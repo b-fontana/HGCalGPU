@@ -20,9 +20,17 @@ extern __constant__ uint32_t calo_rechit_masks[];
 */
 
 template <typename TYPE_IN, typename TYPE_OUT>
-  class KernelManagerData {
+  class KernelConstantData {
  public:
- KernelManagerData(size_t nhits_, TYPE_IN *h_in_, TYPE_IN *d_1_, TYPE_IN *d_2_, TYPE_OUT *d_out_, TYPE_OUT *h_out_):
+ KernelConstantData(double hgcEE_keV2DIGI_): hgcEE_keV2DIGI(hgcEE_keV2DIGI_) {}
+  
+  double hgcEE_keV2DIGI;
+};
+
+template <typename TYPE_IN, typename TYPE_OUT>
+  class KernelModifiableData {
+ public:
+ KernelModifiableData(size_t nhits_, TYPE_IN *h_in_, TYPE_IN *d_1_, TYPE_IN *d_2_, TYPE_OUT *d_out_, TYPE_OUT *h_out_):
   nhits(nhits_), h_in(h_in_), d_1(d_1_), d_2(d_2_), d_out(d_out_), h_out(h_out_) {}
 
   size_t nhits;
@@ -48,14 +56,12 @@ protected:
 //the class assumes that the sizes of the arrays pointed to and the size of the collection are constant
 class KernelManagerHGCalRecHit: private KernelManagerBase {
  public:
-  explicit KernelManagerHGCalRecHit(KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>, const DetId::Detector &);
+  explicit KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>, const KernelConstantData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>&, const DetId::Detector&);
   ~KernelManagerHGCalRecHit();
   void run_kernels();
   HGCRecHitSoA* get_output();
 
  private:
-  //friend class KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>;
-
   void ee_step1_wrapper();
   void hef_step1_wrapper();
   void heb_step1_wrapper();
@@ -66,7 +72,8 @@ class KernelManagerHGCalRecHit: private KernelManagerBase {
 
   const DetId::Detector dtype_;
   const std::vector<HGCUncalibratedRecHitSoA> h_oldhits_;
-  KernelManagerData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data_;
+  KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data_;
+  KernelConstantData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> cdata_;
 };
 
 #endif //_KERNELMANAGER_H_
