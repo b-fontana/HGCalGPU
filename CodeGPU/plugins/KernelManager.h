@@ -24,7 +24,7 @@ template <typename T>
 class KernelConstantData {
  public:
  KernelConstantData(const T& data_): data(data_) {
-    if( std::is_same<T, HGCeeUncalibratedRecHitConstantData>::value or	std::is_same<T, HGChefUncalibratedRecHitConstantData>::value or std::is_same<T, HGChebUncalibratedRecHitConstantData>::value )
+    if( ! (std::is_same<T, HGCeeUncalibratedRecHitConstantData>::value or std::is_same<T, HGChefUncalibratedRecHitConstantData>::value or std::is_same<T, HGChebUncalibratedRecHitConstantData>::value ))
       {
 	throw cms::Exception("WrongTemplateType") << "The KernelConstantData class does not support this type.";
       }

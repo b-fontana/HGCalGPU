@@ -54,7 +54,7 @@ void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGCeeUncalib
   ee_to_rechit<<<nblocks_,nthreads_>>>( *(data_.d_out), *(data_.d_1), kcdata.data, data_.nhits );
   after_kernel();
 
-  //transfer_to_host_and_synchronize();
+  transfer_to_host_and_synchronize();
 }
 
 void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>& kcdata)
@@ -71,7 +71,7 @@ void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGChefUncali
   hef_to_rechit<<<nblocks_,nthreads_>>>( *(data_.d_out), *(data_.d_1), kcdata.data, data_.nhits );
   after_kernel();
 
-  //transfer_to_host_and_synchronize();
+  transfer_to_host_and_synchronize();
 }
 
 void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData>& kcdata)
@@ -88,7 +88,7 @@ void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGChebUncali
   heb_to_rechit<<<nblocks_,nthreads_>>>( *(data_.d_out), *(data_.d_1), kcdata.data, data_.nhits );
   after_kernel();
 
-  //transfer_to_host_and_synchronize();
+  transfer_to_host_and_synchronize();
 }
 
 void KernelManagerHGCalRecHit::after_kernel() {

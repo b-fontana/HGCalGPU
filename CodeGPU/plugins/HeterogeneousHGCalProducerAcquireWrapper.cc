@@ -1,10 +1,3 @@
-#include <cstdio>
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <type_traits>
-#include <cuda_runtime.h>
-
 #include "HeterogeneousHGCalProducerAcquireWrapper.h"
 #include "Types.h"
 
@@ -56,36 +49,49 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::set_geometry_(const 
 }
 
 template <typename T_IN, typename T_OUT>
-void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGCUncalibratedRecHitSoA*& soa, cudautils::device::unique_ptr<float[]>& mem)
+void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGCUncalibratedRecHitSoA*& soa1, HGCUncalibratedRecHitSoA*& soa2, HGCRecHitSoA*& soa3, cudautils::device::unique_ptr<float[]>& mem)
 {
-  size_t size1 = 6*sizeof(float);
-  size_t size2 = 3*sizeof(uint32_t);
-  mem = cudautils::make_device_unique<float[]>(stride_*(size1+size2), 0);
+  std::vector<size_t> sizes = {6*sizeof(float), 3*sizeof(uint32_t),  //soa1
+			       6*sizeof(float), 3*sizeof(uint32_t),  //soa2
+			       2*sizeof(float), 3*sizeof(uint32_t)}; //soa3
+  size_t size_tot = std::accumulate( sizes.begin(), sizes.end(), 0);
+  mem = cudautils::make_device_unique<float[]>(stride_ * size_tot, 0);
 
-  soa->amplitude     = (float*)(mem.get());
-  soa->pedestal      = (float*)(soa->amplitude    + stride_);
-  soa->jitter        = (float*)(soa->pedestal     + stride_);
-  soa->chi2          = (float*)(soa->jitter       + stride_);
-  soa->OOTamplitude  = (float*)(soa->chi2         + stride_);
-  soa->OOTchi2       = (float*)(soa->OOTamplitude + stride_);
-  soa->flags         = (uint32_t*)(soa->OOTchi2   + stride_);
-  soa->aux           = (uint32_t*)(soa->flags     + stride_);
-  soa->id            = (uint32_t*)(soa->aux       + stride_);
-  soa->nbytes = size1 + size2;
-}
+  soa1->amplitude     = (float*)(mem.get());
+  soa1->pedestal      = (float*)(soa1->amplitude    + stride_);
+  soa1->jitter        = (float*)(soa1->pedestal     + stride_);
+  soa1->chi2          = (float*)(soa1->jitter       + stride_);
+  soa1->OOTamplitude  = (float*)(soa1->chi2         + stride_);
+  soa1->OOTchi2       = (float*)(soa1->OOTamplitude + stride_);
 
-template <typename T_IN, typename T_OUT>
-void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGCRecHitSoA*& soa, cudautils::device::unique_ptr<float[]>& mem)
-{
-  size_t size1 = 2*sizeof(float);
-  size_t size2 = 3*sizeof(uint32_t);
-  mem = cudautils::make_device_unique<float[]>( stride_*(size1+size2), 0); 
-  soa->energy     = (float*)(mem.get());
-  soa->time       = (float*)(soa->energy   + stride_);
-  soa->id         = (uint32_t*)(soa->time  + stride_);
-  soa->flags      = (uint32_t*)(soa->id    + stride_);
-  soa->flagBits   = (uint32_t*)(soa->flags + stride_);
-  soa->nbytes = size1 + size2;
+  soa2->amplitude     = (float*)(soa1->OOTchi2      + stride_);
+  soa2->pedestal      = (float*)(soa2->amplitude    + stride_);
+  soa2->jitter        = (float*)(soa2->pedestal     + stride_);
+  soa2->chi2          = (float*)(soa2->jitter       + stride_);
+  soa2->OOTamplitude  = (float*)(soa2->chi2         + stride_);
+  soa2->OOTchi2       = (float*)(soa2->OOTamplitude + stride_);
+
+  soa3->energy        = (float*)(soa2->OOTchi2      + stride_);
+  soa3->time          = (float*)(soa3->energy       + stride_);
+
+  soa1->flags         = (uint32_t*)(soa3->time      + stride_);
+  soa1->aux           = (uint32_t*)(soa1->flags     + stride_);
+  soa1->id            = (uint32_t*)(soa1->aux       + stride_);
+
+  soa2->flags         = (uint32_t*)(soa1->id        + stride_);
+  soa2->aux           = (uint32_t*)(soa2->flags     + stride_);
+  soa2->id            = (uint32_t*)(soa2->aux       + stride_);
+
+  soa3->id            = (uint32_t*)(soa2->id        + stride_);
+  soa3->flags         = (uint32_t*)(soa3->id        + stride_);
+  soa3->flagBits      = (uint32_t*)(soa3->flags     + stride_);
+
+  soa1->nbytes = std::accumulate(sizes.begin(), sizes.begin()+2, 0);
+  soa2->nbytes = std::accumulate(sizes.begin()+2, sizes.begin()+4, 0);
+  soa3->nbytes = std::accumulate(sizes.begin()+4, sizes.begin()+6, 0);
+
+  std::cout << "SIZE TOT: " << size_tot << std::endl;
+  std::cout << soa1->nbytes << ", " << soa2->nbytes << ", " << soa3->nbytes << std::endl;
 }
 
 template <typename T_IN, typename T_OUT>
@@ -136,16 +142,10 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::run(const KernelCons
   convert_collection_data_to_soa_<HGCUncalibratedRecHit>();
 
   d_oldhits_ = new HGCUncalibratedRecHitSoA();
-  cudautils::device::unique_ptr<float[]> d_float_2;
-  allocate_device_(d_oldhits_, d_float_2);
-
   d_newhits_ = new HGCUncalibratedRecHitSoA();
-  cudautils::device::unique_ptr<float[]> d_float_3;
-  allocate_device_(d_newhits_, d_float_3);
-
   d_newhits_final_ = new HGCRecHitSoA();
-  cudautils::device::unique_ptr<float[]> d_float_4;
-  allocate_device_(d_newhits_final_, d_float_4);
+  cudautils::device::unique_ptr<float[]> d_float;
+  allocate_device_(d_oldhits_, d_newhits_, d_newhits_final_, d_float);
 
   h_newhits_ = new HGCRecHitSoA();
   cudautils::host::unique_ptr<float[]> h_float_2;
