@@ -89,8 +89,8 @@ void KernelManagerHGCalRecHit::ee_step1_wrapper()
 				    (data_.d_1)->flags,
 				    (data_.d_1)->aux,
 				    (data_.d_1)->id,
-				    data_.nhits,
-				    cdata_);
+				    cdata_.hgcEE_keV2DIGI,
+				    data_.nhits);
   cudaCheck( cudaDeviceSynchronize() );
   cudaCheck( cudaGetLastError() );
 }
