@@ -6,11 +6,10 @@
 #include <cuda_runtime.h>
 
 #include "HeterogeneousHGCalProducerAcquireWrapper.h"
-#include "KernelManager.h"
 #include "Types.h"
 
 template <class T_IN, class T_OUT>
-HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>& hits, const edm::EventSetup& setup, const double& cdata, const DetId::Detector& dtype): cdata_(cdata), dtype_(dtype)
+HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>& hits, const edm::EventSetup& setup)
 {
   nhits_ = hits.size();
   if (nhits_ == 0)
@@ -20,7 +19,7 @@ HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::HeterogeneousHGCalProduce
     assert(hits[i].id().det() == hits[i+1].id().det());
   
   det_ = hits[0].id().det(); 
-  if( (det_ != DetId::HGCalEE) and (det_ != DetId::HGCalHSi) and (det_ != DetId::HGCalHSc))
+  if( !(det_ == DetId::HGCalEE or det_ == DetId::HGCalHSi or det_ == DetId::HGCalHSc) )
     throw cms::Exception("WrongDetectorType") << "The specified detector is wrong.";
 
   stride_ = ( (nhits_-1)/32 + 1 ) * 32;
@@ -59,9 +58,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::set_geometry_(const 
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGCUncalibratedRecHitSoA*& soa, cudautils::device::unique_ptr<float[]>& mem)
 {
-  const size_t size1 = 6*stride_*sizeof(float);
-  const size_t size2 = 3*stride_*sizeof(uint32_t);
-  mem = cudautils::make_device_unique<float[]>(size1 + size2, 0);
+  size_t size1 = 6*sizeof(float);
+  size_t size2 = 3*sizeof(uint32_t);
+  mem = cudautils::make_device_unique<float[]>(stride_*(size1+size2), 0);
 
   soa->amplitude     = (float*)(mem.get());
   soa->pedestal      = (float*)(soa->amplitude    + stride_);
@@ -78,10 +77,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGC
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGCRecHitSoA*& soa, cudautils::device::unique_ptr<float[]>& mem)
 {
-  const size_t size1 = 2*stride_*sizeof(float);
-  const size_t size2 = 3*stride_*sizeof(uint32_t);
-  mem = cudautils::make_device_unique<float[]>(size1 + size2, 0); 
-
+  size_t size1 = 2*sizeof(float);
+  size_t size2 = 3*sizeof(uint32_t);
+  mem = cudautils::make_device_unique<float[]>( stride_*(size1+size2), 0); 
   soa->energy     = (float*)(mem.get());
   soa->time       = (float*)(soa->energy   + stride_);
   soa->id         = (uint32_t*)(soa->time  + stride_);
@@ -93,9 +91,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGC
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(HGCUncalibratedRecHitSoA*& soa, cudautils::host::noncached::unique_ptr<float[]>& mem)
 {
-  const size_t size1 = 6*stride_*sizeof(float);
-  const size_t size2 = 3*stride_*sizeof(uint32_t);
-  mem = cudautils::make_host_noncached_unique<float[]>(size1 + size2, 0);
+  size_t size1 = 6*sizeof(float);
+  size_t size2 = 3*sizeof(uint32_t);
+  mem = cudautils::make_host_noncached_unique<float[]>(stride_ * (size1+size2), 0);
 
   soa->amplitude     = (float*)(mem.get());
   soa->pedestal      = (float*)(soa->amplitude    + stride_);
@@ -112,9 +110,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(HGCUn
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(HGCRecHitSoA*& soa, cudautils::host::unique_ptr<float[]>& mem)
 {
-  const size_t size1 = 2*stride_*sizeof(float);
-  const size_t size2 = 3*stride_*sizeof(uint32_t);
-  mem = cudautils::make_host_unique<float[]>(size1 + size2, 0);
+  size_t size1 = 2*sizeof(float);
+  size_t size2 = 3*sizeof(uint32_t);
+  mem = cudautils::make_host_unique<float[]>(stride_*(size1+size2), 0);
 
   soa->energy     = (float*)(mem.get());
   soa->time       = (float*)(soa->energy   + stride_);
@@ -125,7 +123,8 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(HGCRe
 }
 
 template <typename T_IN, typename T_OUT>
-void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::run()
+template <class U>
+void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::run(const KernelConstantData<U>& kcdata)
 {
   if (!std::is_same<T_IN, HGCUncalibratedRecHit>::value)
     throw cms::Exception("WrongTemplateType") << "The hgc_rechit_kernel_wrapper template does not support this type.";
@@ -152,15 +151,10 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::run()
   cudautils::host::unique_ptr<float[]> h_float_2;
   allocate_host_(h_newhits_, h_float_2);
 
-  assert(old_soa_->nbytes == d_oldhits_->nbytes);
-  assert(old_soa_->nbytes == d_newhits_->nbytes);
-  assert(d_newhits_final_->nbytes == h_newhits_->nbytes);
-
-  KernelConstantData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> kcdata(cdata_);
   KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> kmdata(nhits_, old_soa_, d_oldhits_, d_newhits_, d_newhits_final_, h_newhits_);
-  KernelManagerHGCalRecHit kernel_manager(kmdata, kcdata, dtype_);
+  KernelManagerHGCalRecHit kernel_manager(kmdata, det_);
 
-  kernel_manager.run_kernels();
+  kernel_manager.run_kernels(kcdata);
   new_soa_ = kernel_manager.get_output();
   convert_soa_data_to_collection_<HGCRecHit>();
 }
@@ -215,5 +209,8 @@ void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>:
 }
 
 template class HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>;
+template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::run<HGCeeUncalibratedRecHitConstantData>(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
+template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::run<HGChefUncalibratedRecHitConstantData>(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
+template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::run<HGChebUncalibratedRecHitConstantData>(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
 template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::convert_collection_data_to_soa_<HGCUncalibratedRecHit>();
 template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::convert_soa_data_to_collection_<HGCRecHit>();

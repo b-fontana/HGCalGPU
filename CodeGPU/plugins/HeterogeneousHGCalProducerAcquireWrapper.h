@@ -20,17 +20,18 @@
 #include "HeterogeneousCore/CUDAUtilities/interface/host_noncached_unique_ptr.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/host_unique_ptr.h"
 
+#include "KernelManager.h"
 #include "Utils.h"
 #include "Types.h"
 
 template <class T_IN, class T_OUT>
 class HeterogeneousHGCalProducerAcquireWrapper {
  public:
-  HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>&, const edm::EventSetup&, const double&, const DetId::Detector&);
+  HeterogeneousHGCalProducerAcquireWrapper(const edm::SortedCollection<T_IN>&, const edm::EventSetup&);
   ~HeterogeneousHGCalProducerAcquireWrapper();
   edm::SortedCollection<T_OUT> get_output_collection();
-  void run();
-  void run(const CUDAScopedContextAcquire&);
+  template <class U> void run(const KernelConstantData<U>&);
+  //template <class U> void run(const KernelConstantData<U>&, const CUDAScopedContextAcquire&);
 
  private:
   HGCUncalibratedRecHitSoA *old_soa_ = nullptr, *d_oldhits_ = nullptr, *d_newhits_ = nullptr;
@@ -53,7 +54,6 @@ class HeterogeneousHGCalProducerAcquireWrapper {
   size_t nhits_;
   unsigned int stride_;
   edm::SortedCollection<T_IN> hits_;
-  double cdata_;
   DetId::Detector dtype_;
   edm::SortedCollection<T_OUT> out_data_;
   DetId::Detector det_;

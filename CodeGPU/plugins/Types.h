@@ -3,10 +3,19 @@
 
 #include <vector>
 
-class HeterogeneousProducerConstantData {
+class HGCeeUncalibratedRecHitConstantData {
  public:
-  float a;
-  std::vector<double> b;
+  double hgcEE_keV2DIGI_;
+};
+
+class HGChefUncalibratedRecHitConstantData {
+ public:
+  double hgcHEF_keV2DIGI_;
+};
+
+class HGChebUncalibratedRecHitConstantData {
+ public:
+  double hgcHEB_keV2DIGI_;
 };
 
 class HGCUncalibratedRecHitSoA {

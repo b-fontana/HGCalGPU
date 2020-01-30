@@ -1,6 +1,7 @@
 #ifndef _KERNELMANAGER_H
 #define _KERNELMANAGER_H
 
+#include "FWCore/Utilities/interface/Exception.h"
 #include "DataFormats/DetId/interface/DetId.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/cudaCompat.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/cudaCheck.h"
@@ -19,12 +20,16 @@ extern __constant__ uint32_t calo_rechit_masks[];
 #endif
 */
 
-template <typename TYPE_IN, typename TYPE_OUT>
-  class KernelConstantData {
+template <typename T>
+class KernelConstantData {
  public:
- KernelConstantData(double hgcEE_keV2DIGI_): hgcEE_keV2DIGI(hgcEE_keV2DIGI_) {}
-  
-  double hgcEE_keV2DIGI;
+ KernelConstantData(const T& data_): data(data_) {
+    if( std::is_same<T, HGCeeUncalibratedRecHitConstantData>::value or	std::is_same<T, HGChefUncalibratedRecHitConstantData>::value or std::is_same<T, HGChebUncalibratedRecHitConstantData>::value )
+      {
+	throw cms::Exception("WrongTemplateType") << "The KernelConstantData class does not support this type.";
+      }
+  }
+  T data;
 };
 
 template <typename TYPE_IN, typename TYPE_OUT>
@@ -40,40 +45,24 @@ template <typename TYPE_IN, typename TYPE_OUT>
   TYPE_OUT *h_out;
 };
 
-class KernelManagerBase {
-public:
-  explicit KernelManagerBase(){};
-  virtual ~KernelManagerBase(){};
-  
-  virtual void run_kernels() = 0;
-
-protected:
-  virtual void assign_and_transfer_to_device() = 0;
-  virtual void transfer_to_host_and_synchronize() = 0;
-  virtual void reuse_device_pointers() = 0;
-};
-
-//the class assumes that the sizes of the arrays pointed to and the size of the collection are constant
-class KernelManagerHGCalRecHit: private KernelManagerBase {
+class KernelManagerHGCalRecHit {
  public:
-  explicit KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>, const KernelConstantData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>&, const DetId::Detector&);
+  KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>, const DetId::Detector&);
   ~KernelManagerHGCalRecHit();
-  void run_kernels();
+  void run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
   HGCRecHitSoA* get_output();
 
  private:
-  void ee_step1_wrapper();
-  void hef_step1_wrapper();
-  void heb_step1_wrapper();
-  void to_rechit_wrapper();
-  void assign_and_transfer_to_device() override;
-  void transfer_to_host_and_synchronize() override;
-  void reuse_device_pointers() override;
+  void after_kernel();
+  void assign_and_transfer_to_device();
+  void transfer_to_host_and_synchronize();
+  void reuse_device_pointers();
 
   const DetId::Detector dtype_;
   const std::vector<HGCUncalibratedRecHitSoA> h_oldhits_;
   KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data_;
-  KernelConstantData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> cdata_;
 };
 
 #endif //_KERNELMANAGER_H_

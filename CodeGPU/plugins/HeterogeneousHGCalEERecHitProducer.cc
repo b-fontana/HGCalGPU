@@ -5,7 +5,7 @@ HeterogeneousHGCalEERecHitsProd::HeterogeneousHGCalEERecHitsProd(const edm::Para
   token_(consumes<HGCUncalibratedRecHitCollection>(ps.getParameter<edm::InputTag>("HGCEEUncalibRecHitsTok")))
 {
   //read all constants and prepare their move to the wrapper
-  hgcEE_keV2DIGI_ = ps.getParameter<double>("HGCEE_keV2DIGI");
+  cdata_.hgcEE_keV2DIGI_ = ps.getParameter<double>("HGCEE_keV2DIGI");
 
   produces<HGCeeRecHitCollection>(collection_name_);
 }
@@ -20,8 +20,9 @@ void HeterogeneousHGCalEERecHitsProd::acquire(edm::Event const& event, edm::Even
   const auto &hits_ee = *handle_ee_;
   handle_size_ = hits_ee.size();
 
-  HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit> acq_wrap(hits_ee, setup, hgcEE_keV2DIGI_, dtype_);
-  acq_wrap.run();
+  KernelConstantData<HGCeeUncalibratedRecHitConstantData> kcdata(cdata_);
+  HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit> acq_wrap(hits_ee, setup);
+  acq_wrap.run(kcdata);
   rechits_raw_ = acq_wrap.get_output_collection();
 }
 

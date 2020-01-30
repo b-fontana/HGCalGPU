@@ -3,33 +3,43 @@
 #include "HGCalRecHitKernelImpl.cuh"
 
 __global__
-void ee_step1(float *__restrict__ dst_amplitude, float *__restrict__ dst_pedestal, float *__restrict__ dst_jitter,  float *__restrict__ dst_chi2, float *__restrict__ dst_OOTamplitude, float *__restrict__ dst_OOTchi2, uint32_t *__restrict__ dst_flags, uint32_t *__restrict__ dst_aux, uint32_t *__restrict__ dst_id, float *__restrict__ src_amplitude, float *__restrict__ src_pedestal, float *__restrict__ src_jitter,  float *__restrict__ src_chi2, float *__restrict__ src_OOTamplitude, float *__restrict__ src_OOTchi2, uint32_t *__restrict__ src_flags, uint32_t *__restrict__ src_aux, uint32_t *__restrict__ src_id, double cdata, size_t length)
+void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, size_t length)
 {
   if(blockDim.x * blockIdx.x + threadIdx.x == 0)
-    printf("Constant data: %f\n", cdata);
+    printf("Constant data: %f\n", cdata.hgcEE_keV2DIGI_);
   for (unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
-      dst_amplitude[i] = src_amplitude[i];
+      dst_soa.amplitude[i] = src_soa.amplitude[i];
     }
 }
 
 __global__
-void hef_step1(float *__restrict__ dst_amplitude, float *__restrict__ dst_pedestal, float *__restrict__ dst_jitter,  float *__restrict__ dst_chi2, float *__restrict__ dst_OOTamplitude, float *__restrict__ dst_OOTchi2, uint32_t *__restrict__ dst_flags, uint32_t *__restrict__ dst_aux, uint32_t *__restrict__ dst_id, float *__restrict__ src_amplitude, float *__restrict__ src_pedestal, float *__restrict__ src_jitter,  float *__restrict__ src_chi2, float *__restrict__ src_OOTamplitude, float *__restrict__ src_OOTchi2, uint32_t *__restrict__ src_flags, uint32_t *__restrict__ src_aux, uint32_t *__restrict__ src_id, size_t length)
+void hef_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChefUncalibratedRecHitConstantData cdata, size_t length)
 {
 }
 
 __global__
-void heb_step1(float *__restrict__ dst_amplitude, float *__restrict__ dst_pedestal, float *__restrict__ dst_jitter,  float *__restrict__ dst_chi2, float *__restrict__ dst_OOTamplitude, float *__restrict__ dst_OOTchi2, uint32_t *__restrict__ dst_flags, uint32_t *__restrict__ dst_aux, uint32_t *__restrict__ dst_id, float *__restrict__ src_amplitude, float *__restrict__ src_pedestal, float *__restrict__ src_jitter,  float *__restrict__ src_chi2, float *__restrict__ src_OOTamplitude, float *__restrict__ src_OOTchi2, uint32_t *__restrict__ src_flags, uint32_t *__restrict__ src_aux, uint32_t *__restrict__ src_id, size_t length)
+void heb_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChebUncalibratedRecHitConstantData cdata, size_t length)
 {
 }
 
 __global__
-void to_rechit(float *__restrict__ dst_energy, float *__restrict__ dst_time, uint32_t *__restrict__ dst_id, uint32_t *__restrict__ dst_flags, uint32_t *__restrict__ dst_flagBits, float *__restrict__ src_amplitude, float *__restrict__ src_pedestal, float *__restrict__ src_jitter,  float *__restrict__ src_chi2, float *__restrict__ src_OOTamplitude, float *__restrict__ src_OOTchi2, uint32_t *__restrict__ src_flags, uint32_t *__restrict__ src_aux, uint32_t *__restrict__ src_id, size_t length)
+void ee_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, size_t length)
 {
   for (size_t i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
-      dst_energy[i] = 2.;
+      dst_soa.energy[i] = 2.;
     }
+}
+
+__global__
+void hef_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChefUncalibratedRecHitConstantData cdata, size_t length)
+{
+}
+
+__global__
+void heb_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChebUncalibratedRecHitConstantData cdata, size_t length)
+{
 }
 
 /*

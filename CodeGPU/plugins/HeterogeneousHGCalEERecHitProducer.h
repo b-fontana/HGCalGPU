@@ -40,13 +40,12 @@ class HeterogeneousHGCalEERecHitsProd: public edm::stream::EDProducer<edm::Exter
   const std::string collection_name_ = "HeterogeneousHGCeeUncalibratedRecHits";
   edm::Handle<HGCeeUncalibratedRecHitCollection> handle_ee_; 
   size_t handle_size_;
-  DetId::Detector dtype_ = DetId::Detector::HGCalEE;
   HGCeeRecHitCollection rechits_raw_;
   std::unique_ptr< HGCeeRecHitCollection > rechits_;
   CUDAContextState ctxState_;
 
   //constants
-  double hgcEE_keV2DIGI_;
+  HGCeeUncalibratedRecHitConstantData cdata_;
 };
 
 #endif //HeterogeneousHGCalEERecHitProducer_h
