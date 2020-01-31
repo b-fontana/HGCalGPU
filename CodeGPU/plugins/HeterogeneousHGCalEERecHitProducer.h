@@ -46,6 +46,7 @@ class HeterogeneousHGCalEERecHitsProd: public edm::stream::EDProducer<edm::Exter
 
   //constants
   HGCeeUncalibratedRecHitConstantData cdata_;
+  HGCConstantVectorData vdata_;
 };
 
 #endif //HeterogeneousHGCalEERecHitProducer_h

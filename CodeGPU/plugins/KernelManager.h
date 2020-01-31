@@ -23,13 +23,14 @@ extern __constant__ uint32_t calo_rechit_masks[];
 template <typename T>
 class KernelConstantData {
  public:
- KernelConstantData(const T& data_): data(data_) {
+ KernelConstantData(T& data_, HGCConstantVectorData& vdata_): data(data_), vdata(vdata_) {
     if( ! (std::is_same<T, HGCeeUncalibratedRecHitConstantData>::value or std::is_same<T, HGChefUncalibratedRecHitConstantData>::value or std::is_same<T, HGChebUncalibratedRecHitConstantData>::value ))
       {
 	throw cms::Exception("WrongTemplateType") << "The KernelConstantData class does not support this type.";
       }
   }
   T data;
+  HGCConstantVectorData vdata;
 };
 
 template <typename TYPE_IN, typename TYPE_OUT>
@@ -49,14 +50,17 @@ class KernelManagerHGCalRecHit {
  public:
   KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>, const DetId::Detector&);
   ~KernelManagerHGCalRecHit();
-  void run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
-  void run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
-  void run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, const KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, const KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
   HGCRecHitSoA* get_output();
 
  private:
   void after_kernel();
   void assign_and_transfer_to_device();
+  void assign_and_transfer_to_device(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
+  void assign_and_transfer_to_device(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, const KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
+  void assign_and_transfer_to_device(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, const KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
   void transfer_to_host_and_synchronize();
   void reuse_device_pointers();
 

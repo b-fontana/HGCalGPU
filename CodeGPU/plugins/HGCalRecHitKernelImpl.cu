@@ -7,6 +7,7 @@ void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa
 {
   if(blockDim.x * blockIdx.x + threadIdx.x == 0)
     printf("Constant data: %f\n", cdata.hgcEE_keV2DIGI_);
+    printf("Constant data: %f\n", cdata.rcorr_[0]);
   for (unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
     {
       dst_soa.amplitude[i] = src_soa.amplitude[i];
