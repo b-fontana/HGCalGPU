@@ -4,16 +4,19 @@ enableGPU = True
 from Configuration.ProcessModifiers.gpu_cff import gpu
 
 from RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi import HGCalRecHit
+from SimCalorimetry.HGCalSimProducers.hgcalDigitizer_cfi import HGCAL_noise_fC, HGCAL_chargeCollectionEfficiencies
 
 process = cms.Process("TEST", gpu) if enableGPU else cms.Process("TEST")
-process.load("FWCore.MessageService.MessageLogger_cfi")
+process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('Configuration.Geometry.GeometryExtended2026D46Reco_cff')
-process.load("HeterogeneousCore.CUDAServices.CUDAService_cfi")
+process.load('HeterogeneousCore.CUDAServices.CUDAService_cfi')
+process.load('RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi')
+process.load('SimCalorimetry.HGCalSimProducers.hgcalDigitizer_cfi')
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32( 4 ))
@@ -29,9 +32,19 @@ process.source = cms.Source("PoolSource",
 process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool( False ))
 
-process.HeterogeneousHGCalEERecHits =  cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
-                                                      HGCEEUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'),
-                                                      HGCEE_keV2DIGI = HGCalRecHit.__dict__['HGCEE_keV2DIGI']);
+#print(HGCalRecHit.__dict__)
+process.HeterogeneousHGCalEERecHits = cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
+                                                     HGCEEUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'),
+                                                     HGCEE_keV2DIGI = HGCalRecHit.__dict__['HGCEE_keV2DIGI'],
+                                                     HGCEE_fCPerMIP = HGCalRecHit.__dict__['HGCEE_fCPerMIP'],
+                                                     HGCEE_isSiFE   = HGCalRecHit.__dict__['HGCEE_isSiFE'],
+                                                     HGCEE_noise_fC = HGCalRecHit.__dict__['HGCEE_noise_fC'],
+                                                     HGCEE_cce      = HGCalRecHit.__dict__['HGCEE_cce'],
+                                                     rangeMatch     = HGCalRecHit.__dict__['rangeMatch'],
+                                                     rangeMask      = HGCalRecHit.__dict__['rangeMask'],
+                                                     rcorr          = HGCalRecHit.__dict__['thicknessCorrection'],
+                                                     weights        = HGCalRecHit.__dict__['layerWeights']
+                                                 );
 
 """
 process.HeterogeneousHGCalHEFRecHits = cms.EDProducer('HeterogeneousHGCalHEFRecHitsProd',

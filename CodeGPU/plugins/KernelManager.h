@@ -50,17 +50,17 @@ class KernelManagerHGCalRecHit {
  public:
   KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>, const DetId::Detector&);
   ~KernelManagerHGCalRecHit();
-  void run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
-  void run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, const KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
-  void run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, const KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
+  void run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
   HGCRecHitSoA* get_output();
 
  private:
   void after_kernel();
   void assign_and_transfer_to_device();
-  void assign_and_transfer_to_device(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
-  void assign_and_transfer_to_device(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, const KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
-  void assign_and_transfer_to_device(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, const KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
+  void assign_and_transfer_to_device(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
+  void assign_and_transfer_to_device(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
+  void assign_and_transfer_to_device(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
   void transfer_to_host_and_synchronize();
   void reuse_device_pointers();
 
