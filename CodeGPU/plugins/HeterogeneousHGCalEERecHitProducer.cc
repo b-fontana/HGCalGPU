@@ -18,7 +18,7 @@ HeterogeneousHGCalEERecHitsProd::HeterogeneousHGCalEERecHitsProd(const edm::Para
   cdata_.s_hgcEE_cce_      = vdata_.cce.size();
   cdata_.s_hgcEE_noise_fC_ = vdata_.noise_fC.size();
   cdata_.s_rcorr_            = vdata_.rcorr.size();
-  cdata_.s_weights = vdata_.weights.size();
+  cdata_.s_weights_ = vdata_.weights.size();
 
   cdata_.hgceeUncalib2GeV_ = 1e-6 / cdata_.hgcEE_keV2DIGI_;
   produces<HGCeeRecHitCollection>(collection_name_);

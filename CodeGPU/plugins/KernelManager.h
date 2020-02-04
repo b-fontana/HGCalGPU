@@ -56,13 +56,14 @@ class KernelManagerHGCalRecHit {
   HGCRecHitSoA* get_output();
 
  private:
-  void after_kernel();
-  void assign_and_transfer_to_device();
-  void assign_and_transfer_to_device(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
-  void assign_and_transfer_to_device(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
-  void assign_and_transfer_to_device(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
-  void transfer_to_host_and_synchronize();
-  void reuse_device_pointers();
+  void after_kernel_();
+  size_t get_shared_memory_size_(const size_t&, const size_t&, const size_t&, const size_t&);
+  void assign_and_transfer_to_device_();
+  void assign_and_transfer_to_device_(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
+  void assign_and_transfer_to_device_(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
+  void assign_and_transfer_to_device_(const KernelConstantData<HGChebUncalibratedRecHitConstantData>&, KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
+  void transfer_to_host_and_synchronize_();
+  void reuse_device_pointers_();
 
   const DetId::Detector dtype_;
   const std::vector<HGCUncalibratedRecHitSoA> h_oldhits_;

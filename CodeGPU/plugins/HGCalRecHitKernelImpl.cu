@@ -5,37 +5,40 @@
 __global__
 void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, size_t length)
 {
-  //shared memory allocation
-  __shared__ double   sd[cdata.ndelem]; 
-  __shared__ float    sf[cdata.nfelem]; 
-  __shared__ uint32_t su[cdata.nuelem];
-  __shared__ bool     sb[cdata.nbelem];
+  //dynamic shared memory
+  extern __shared__ double s[];
+  double   *sd = s;
+  float    *sf = (float*)(sd + cdata.ndelem);
+  uint32_t *su = (uint32_t*)(sf + cdata.nfelem);
+  bool     *sb = (bool*)(su + cdata.nuelem);
   
   unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
   //setting shared memory
   sd[0] = cdata.hgcEE_keV2DIGI_;
   sd[1] = cdata.hgceeUncalib2GeV_;
-  for(unsigned int i=0 && i < cdata.s_hgcEE_fCPerMIP_ )
+  for(unsigned int i=0; i < cdata.s_hgcEE_fCPerMIP_; ++i)
     sd[i+2] = cdata.hgcEE_fCPerMIP_[i];
-  for(unsigned int i=0 && i < cdata.s_hgcEE_cce_ )
+  for(unsigned int i=0; i < cdata.s_hgcEE_cce_; ++i)
     sd[i+2+cdata.s_hgcEE_fCPerMIP_] = cdata.hgcEE_cce_[i];
-  for(unsigned int i=0 && i < cdata.s_hgcEE_noise_fC_ )
+  for(unsigned int i=0; i < cdata.s_hgcEE_noise_fC_; ++i)
     sd[i+2+cdata.s_hgcEE_fCPerMIP_+cdata.s_hgcEE_cce_] = cdata.hgcEE_noise_fC_[i];
-  for(unsigned int i=0 && i < cdata.s_rcorr_ )
+  for(unsigned int i=0; i < cdata.s_rcorr_; ++i)
     sd[i+2+cdata.s_hgcEE_fCPerMIP_+cdata.s_hgcEE_cce_+cdata.s_hgcEE_noise_fC_] = cdata.rcorr_[i];
 
-  for(unsigned int i=0 && i < cdata.s_weights_ )
+  for(unsigned int i=0; i < cdata.s_weights_; ++i)
     sf[i] = cdata.weights_[i];
 
   su[0] = cdata.rangeMatch_;
   su[1] = cdata.rangeMask_;
 
-  sb[0] = hgcEE_isSiFE_;
+  sb[0] = cdata.hgcEE_isSiFE_;
 
   __syncthreads();
 
-  for (unsigned int i = blockDim.x * blockIdx.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x)
+  if (tid==0)
+      printf("%f %d %d\n", sd[2], su[1], sb[0]);
+  for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
       dst_soa.amplitude[i] = src_soa.amplitude[i];
     }

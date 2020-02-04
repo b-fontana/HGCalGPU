@@ -78,11 +78,10 @@ class HGChebUncalibratedRecHitConstantData {
   size_t nfelem;
   size_t nuelem;
   size_t nbelem;
-  size_t s_hgcHEF_fCPerMIP_;
-  size_t s_hgcHEF_cce_;
-  size_t s_hgcHEF_noise_fC_;
+  size_t s_hgcHEB_fCPerMIP_;
+  size_t s_hgcHEB_cce_;
   size_t s_rcorr_;
-  size_t s_rweights_;
+  size_t s_weights_;
 };
 
 class HGCUncalibratedRecHitSoA {
