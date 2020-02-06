@@ -2,42 +2,58 @@
 #include <cuda_runtime.h>
 #include "HGCalRecHitKernelImpl.cuh"
 
+__device__ 
+void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, bool*& sb, const HGCeeUncalibratedRecHitConstantData& cdata)
+{
+  size_t size1 = cdata.s_hgcEE_fCPerMIP_ + 2;
+  size_t size2 = cdata.s_hgcEE_cce_      + size1;
+  size_t size3 = cdata.s_hgcEE_noise_fC_ + size2;
+  size_t size4 = cdata.s_rcorr_          + size3; 
+  size_t size5 = cdata.s_weights_        + size4; 
+  if(tid == 0)
+    printf("%f, %f, %f, %f, %f", size1, size2, size3, size4, size5);
+
+  if(tid == 0)
+    sd[tid] = cdata.hgcEE_keV2DIGI_;
+  else if(tid == 1)
+    sd[tid] = cdata.hgceeUncalib2GeV_;
+  else if(tid > 1 && tid < size1)
+    sd[tid] = cdata.hgcEE_fCPerMIP_[tid-2];
+  else if(tid >= size1 && tid < size2)
+    sd[tid] = cdata.hgcEE_cce_[tid-size1];
+  else if(tid >= size2 && tid < size3)
+    sd[tid] = cdata.hgcEE_noise_fC_[tid-size2];
+  else if(tid >= size3 && tid < size4)
+    sd[tid] = cdata.rcorr_[tid - size3];
+  else if(tid >= size4 && tid < size5)
+    sf[tid] = cdata.weights_[tid - size4];
+  else if(tid == size5)
+    su[tid] = cdata.rangeMatch_;
+  else if(tid == size5 + 1)
+    su[tid] = cdata.rangeMask_;
+  else if(tid == size5 + 2)
+    sb[tid] = cdata.hgcEE_isSiFE_;
+
+  __syncthreads();
+}
+
 __global__
 void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, size_t length)
 {
-  //dynamic shared memory
+  unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
   extern __shared__ double s[];
   double   *sd = s;
   float    *sf = (float*)(sd + cdata.ndelem);
   uint32_t *su = (uint32_t*)(sf + cdata.nfelem);
-  bool     *sb = (bool*)(su + cdata.nuelem);
-  
-  unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
+  printf("here 5\n");
+  bool     *sb = (bool*)(su + cdata.nuelem); //erro!!!!!
+  printf("here 6\n");
+  set_shared_memory(threadIdx.x, sd, sf, su, sb, cdata);
+  printf("here 7\n");
 
-  //setting shared memory
-  sd[0] = cdata.hgcEE_keV2DIGI_;
-  sd[1] = cdata.hgceeUncalib2GeV_;
-  for(unsigned int i=0; i < cdata.s_hgcEE_fCPerMIP_; ++i)
-    sd[i+2] = cdata.hgcEE_fCPerMIP_[i];
-  for(unsigned int i=0; i < cdata.s_hgcEE_cce_; ++i)
-    sd[i+2+cdata.s_hgcEE_fCPerMIP_] = cdata.hgcEE_cce_[i];
-  for(unsigned int i=0; i < cdata.s_hgcEE_noise_fC_; ++i)
-    sd[i+2+cdata.s_hgcEE_fCPerMIP_+cdata.s_hgcEE_cce_] = cdata.hgcEE_noise_fC_[i];
-  for(unsigned int i=0; i < cdata.s_rcorr_; ++i)
-    sd[i+2+cdata.s_hgcEE_fCPerMIP_+cdata.s_hgcEE_cce_+cdata.s_hgcEE_noise_fC_] = cdata.rcorr_[i];
-
-  for(unsigned int i=0; i < cdata.s_weights_; ++i)
-    sf[i] = cdata.weights_[i];
-
-  su[0] = cdata.rangeMatch_;
-  su[1] = cdata.rangeMask_;
-
-  sb[0] = cdata.hgcEE_isSiFE_;
-
-  __syncthreads();
-
-  if (tid==0)
-      printf("%f %d %d\n", sd[2], su[1], sb[0]);
+  printf("%f\n", sd[2]);
+  printf("%d\n", su[1]);
+  printf("%d\n", sb[0]);
   for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
       dst_soa.amplitude[i] = src_soa.amplitude[i];

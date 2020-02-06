@@ -6,7 +6,7 @@
 #include "HGCalRecHitKernelImpl.cuh"
 
 dim3 nblocks_;
-constexpr dim3 nthreads_(256);
+constexpr dim3 nthreads_(256); //some kernels will potentially not allocate shared memory properly with a lower number
 
 KernelManagerHGCalRecHit::KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data, const DetId::Detector& dtype):
   data_(data), dtype_(dtype)
@@ -76,6 +76,7 @@ void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGCeeUncalib
   printf("Running ee kernel with: %zu hits.\n", data_.nhits);
   printf("%d blocks being launched with %d threads (%d in total).\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x);
   size_t nbytes_shared = get_shared_memory_size_(h_kcdata.data.ndelem, h_kcdata.data.nfelem, h_kcdata.data.nuelem, h_kcdata.data.nbelem);
+  printf("NBytes: %zu\n", nbytes_shared);
   ee_step1<<<nblocks_, nthreads_, nbytes_shared>>>( *(data_.d_2), *(data_.d_1), d_kcdata.data, data_.nhits );
   after_kernel_();
 
