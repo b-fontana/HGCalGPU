@@ -10,6 +10,7 @@ class HGCConstantVectorData {
   std::vector<double> noise_fC;
   std::vector<double> rcorr;
   std::vector<double> weights;
+  std::vector<int> waferTypeL;
 };
 
 class HGCeeUncalibratedRecHitConstantData {
@@ -20,7 +21,8 @@ class HGCeeUncalibratedRecHitConstantData {
   double *hgcEE_cce_;
   double *hgcEE_noise_fC_;
   double *rcorr_;
-  float *weights_;
+  double *weights_;
+  int *waferTypeL_;
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
   bool hgcEE_isSiFE_;
@@ -29,12 +31,14 @@ class HGCeeUncalibratedRecHitConstantData {
   size_t ndelem;
   size_t nfelem;
   size_t nuelem;
+  size_t nielem;
   size_t nbelem;
   size_t s_hgcEE_fCPerMIP_;
   size_t s_hgcEE_cce_;
   size_t s_hgcEE_noise_fC_;
   size_t s_rcorr_;
   size_t s_weights_;
+  size_t s_waferTypeL_;
 };
 
 class HGChefUncalibratedRecHitConstantData {
@@ -45,7 +49,8 @@ class HGChefUncalibratedRecHitConstantData {
   double *hgcHEF_cce_;
   double *hgcHEF_noise_fC_;
   double *rcorr_;
-  float *weights_;
+  double *weights_;
+  int *waferTypeL_;
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
   bool hgcHEF_isSiFE_;
@@ -53,12 +58,14 @@ class HGChefUncalibratedRecHitConstantData {
   size_t ndelem;
   size_t nfelem;
   size_t nuelem;
+  size_t nielem;
   size_t nbelem;
   size_t s_hgcHEF_fCPerMIP_;
   size_t s_hgcHEF_cce_;
   size_t s_hgcHEF_noise_fC_;
   size_t s_rcorr_;
   size_t s_weights_;
+  size_t s_waferTypeL_;
 };
 
 class HGChebUncalibratedRecHitConstantData {
@@ -69,7 +76,8 @@ class HGChebUncalibratedRecHitConstantData {
   double *hgcHEB_fCPerMIP_;
   double *hgcHEB_cce_;
   double *rcorr_;
-  float *weights_;
+  double *weights_;
+  int *waferTypeL_;
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
   bool hgcHEB_isSiFE_;
@@ -77,11 +85,13 @@ class HGChebUncalibratedRecHitConstantData {
   size_t ndelem;
   size_t nfelem;
   size_t nuelem;
+  size_t nielem;
   size_t nbelem;
   size_t s_hgcHEB_fCPerMIP_;
   size_t s_hgcHEB_cce_;
   size_t s_rcorr_;
   size_t s_weights_;
+  size_t s_waferTypeL_;
 };
 
 class HGCUncalibratedRecHitSoA {

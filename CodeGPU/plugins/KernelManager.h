@@ -57,7 +57,7 @@ class KernelManagerHGCalRecHit {
 
  private:
   void after_kernel_();
-  size_t get_shared_memory_size_(const size_t&, const size_t&, const size_t&, const size_t&);
+  size_t get_shared_memory_size_(const size_t&, const size_t&, const size_t&, const size_t&, const size_t&);
   void assign_and_transfer_to_device_();
   void assign_and_transfer_to_device_(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
   void assign_and_transfer_to_device_(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);

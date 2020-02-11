@@ -48,7 +48,8 @@ class HeterogeneousHGCalProducerAcquireWrapper {
 
   //methods
   void set_geometry_(const edm::EventSetup&);
-  std::tuple<size_t, size_t, size_t> get_memory_sizes_(const std::vector<size_t>&, const size_t&, const size_t&);
+  template <class U> void set_geometry_constants_(KernelConstantData<U>& kcdata);
+    std::tuple<size_t, size_t, size_t, size_t> get_memory_sizes_(const std::vector<size_t>&, const size_t&, const size_t&, const size_t&);
   void allocate_host_(KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, cudautils::host::noncached::unique_ptr<double[]>&);
   void allocate_host_(KernelConstantData<HGChefUncalibratedRecHitConstantData>&, cudautils::host::noncached::unique_ptr<double[]>&);
   void allocate_host_(KernelConstantData<HGChebUncalibratedRecHitConstantData>&, cudautils::host::noncached::unique_ptr<double[]>&);

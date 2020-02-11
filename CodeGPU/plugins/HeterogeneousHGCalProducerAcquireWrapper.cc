@@ -48,53 +48,67 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::set_geometry_(const 
   ddd_ = &(handle->topology().dddConstants());
 }
 
+template <class T_IN, class T_OUT>
+template <class U>
+void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::set_geometry_constants_(KernelConstantData<U>& kcdata)
+{
+  kcdata.vdata.waferTypeL = ddd_->retWaferTypeL();
+  kcdata.data.s_waferTypeL_ = kcdata.vdata.waferTypeL.size();
+}
+
 //returns total number of bytes, number of 'double' elements and number of 'float' elements
 template <typename T_IN, typename T_OUT>
-std::tuple<size_t, size_t, size_t> HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::get_memory_sizes_(const std::vector<size_t>& fixed_sizes, const size_t& ndoubles, const size_t& nfloats)
+std::tuple<size_t, size_t, size_t, size_t> HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::get_memory_sizes_(const std::vector<size_t>& fixed_sizes, const size_t& ndoubles, const size_t& nfloats, const size_t& nints)
 {
   const size_t size1 = sizeof(double);
   const size_t size2 = sizeof(float);
+  const size_t size3 = sizeof(int);
   size_t nelements1_tot = std::accumulate( fixed_sizes.begin(), fixed_sizes.begin() + ndoubles, 0);
-  size_t nelements2_tot = std::accumulate( fixed_sizes.begin() + ndoubles, fixed_sizes.end(), 0);
-  assert( fixed_sizes.begin() + ndoubles + nfloats == fixed_sizes.end() );
-  size_t size_tot = nelements1_tot*size1+nelements2_tot*size2;
-  return std::make_tuple(size_tot, nelements1_tot, nelements2_tot);
+  size_t nelements2_tot = std::accumulate( fixed_sizes.begin() + ndoubles, fixed_sizes.begin() + ndoubles + nfloats, 0);
+  size_t nelements3_tot = std::accumulate( fixed_sizes.begin() + ndoubles + nfloats, fixed_sizes.end(), 0);
+  assert( fixed_sizes.begin() + ndoubles + nfloats + nints == fixed_sizes.end() );
+  size_t size_tot = nelements1_tot*size1+nelements2_tot*size2+nelements3_tot*size3;
+  return std::make_tuple(size_tot, nelements1_tot, nelements2_tot, nelements3_tot);
 }
 
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(KernelConstantData<HGCeeUncalibratedRecHitConstantData>& kcdata, cudautils::device::unique_ptr<double[]>& mem) {
-  const std::vector<size_t> nelements = {kcdata.data.s_hgcEE_fCPerMIP_, kcdata.data.s_hgcEE_cce_, kcdata.data.s_hgcEE_noise_fC_, kcdata.data.s_rcorr_, kcdata.data.s_weights_};
-  std::tuple<size_t, size_t, size_t> memsizes = get_memory_sizes_(nelements, 4, 1);
+  const std::vector<size_t> nelements = {kcdata.data.s_hgcEE_fCPerMIP_, kcdata.data.s_hgcEE_cce_, kcdata.data.s_hgcEE_noise_fC_, kcdata.data.s_rcorr_, kcdata.data.s_weights_, kcdata.data.s_waferTypeL_};
+  auto memsizes = get_memory_sizes_(nelements, 5, 0, 1);
 
   mem = cudautils::make_device_unique<double[]>(std::get<0>(memsizes), 0);
 
-  kcdata.data.hgcEE_fCPerMIP_ = (double*)(mem.get());
-  kcdata.data.hgcEE_cce_      = (double*)(kcdata.data.hgcEE_fCPerMIP_ + nelements[0]);
-  kcdata.data.hgcEE_noise_fC_ = (double*)(kcdata.data.hgcEE_cce_ + nelements[1]);
-  kcdata.data.rcorr_          = (double*)(kcdata.data.hgcEE_noise_fC_ + nelements[2]);
-  kcdata.data.weights_        = (float*)(kcdata.data.rcorr_ + nelements[3]);
+  kcdata.data.hgcEE_fCPerMIP_ = mem.get();
+  kcdata.data.hgcEE_cce_      = kcdata.data.hgcEE_fCPerMIP_ + nelements[0];
+  kcdata.data.hgcEE_noise_fC_ = kcdata.data.hgcEE_cce_ + nelements[1];
+  kcdata.data.rcorr_          = kcdata.data.hgcEE_noise_fC_ + nelements[2];
+  kcdata.data.weights_        = kcdata.data.rcorr_ + nelements[3];
+  kcdata.data.waferTypeL_     = reinterpret_cast<int*>(kcdata.data.weights_ + nelements[4]);
   kcdata.data.nbytes = std::get<0>(memsizes);
   kcdata.data.ndelem = std::get<1>(memsizes) + 2;
   kcdata.data.nfelem = std::get<2>(memsizes) + 0;
+  kcdata.data.nielem = std::get<3>(memsizes) + 0;
   kcdata.data.nuelem = 2;
   kcdata.data.nbelem = 1;
 }
 
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(KernelConstantData<HGChefUncalibratedRecHitConstantData>& kcdata, cudautils::device::unique_ptr<double[]>& mem) {
-  const std::vector<size_t> nelements = {kcdata.data.s_hgcHEF_fCPerMIP_, kcdata.data.s_hgcHEF_cce_, kcdata.data.s_hgcHEF_noise_fC_, kcdata.data.s_rcorr_, kcdata.data.s_weights_};
-  std::tuple<size_t, size_t, size_t> memsizes = get_memory_sizes_(nelements, 4, 1);
+  const std::vector<size_t> nelements = {kcdata.data.s_hgcHEF_fCPerMIP_, kcdata.data.s_hgcHEF_cce_, kcdata.data.s_hgcHEF_noise_fC_, kcdata.data.s_rcorr_, kcdata.data.s_weights_, kcdata.data.s_waferTypeL_};
+  auto memsizes = get_memory_sizes_(nelements, 5, 0, 1);
 
   mem = cudautils::make_device_unique<double[]>(std::get<0>(memsizes), 0);
 
-  kcdata.data.hgcHEF_fCPerMIP_ = (double*)(mem.get());
-  kcdata.data.hgcHEF_cce_      = (double*)(kcdata.data.hgcHEF_fCPerMIP_ + nelements[0]);
-  kcdata.data.hgcHEF_noise_fC_ = (double*)(kcdata.data.hgcHEF_cce_ + nelements[1]);
-  kcdata.data.rcorr_           = (double*)(kcdata.data.hgcHEF_noise_fC_ + nelements[2]);
-  kcdata.data.weights_         = (float*)(kcdata.data.rcorr_ + nelements[3]);
+  kcdata.data.hgcHEF_fCPerMIP_ = mem.get();
+  kcdata.data.hgcHEF_cce_      = kcdata.data.hgcHEF_fCPerMIP_ + nelements[0];
+  kcdata.data.hgcHEF_noise_fC_ = kcdata.data.hgcHEF_cce_ + nelements[1];
+  kcdata.data.rcorr_           = kcdata.data.hgcHEF_noise_fC_ + nelements[2];
+  kcdata.data.weights_         = kcdata.data.rcorr_ + nelements[3];
+  kcdata.data.waferTypeL_      = reinterpret_cast<int*>(kcdata.data.weights_ + nelements[4]);
   kcdata.data.nbytes = std::get<0>(memsizes);
   kcdata.data.ndelem = std::get<1>(memsizes) + 2;
   kcdata.data.nfelem = std::get<2>(memsizes) + 0;
+  kcdata.data.nielem = std::get<3>(memsizes) + 0;
   kcdata.data.nuelem = 2;
   kcdata.data.nbelem = 1;
 }
@@ -102,18 +116,20 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(Ker
 
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(KernelConstantData<HGChebUncalibratedRecHitConstantData>& kcdata, cudautils::device::unique_ptr<double[]>& mem) {
-  const std::vector<size_t> nelements = {kcdata.data.s_hgcHEB_fCPerMIP_, kcdata.data.s_hgcHEB_cce_, kcdata.data.s_rcorr_, kcdata.data.s_weights_};
-  std::tuple<size_t, size_t, size_t> memsizes = get_memory_sizes_(nelements, 3, 1);
+  const std::vector<size_t> nelements = {kcdata.data.s_hgcHEB_fCPerMIP_, kcdata.data.s_hgcHEB_cce_, kcdata.data.s_rcorr_, kcdata.data.s_weights_, kcdata.data.s_waferTypeL_};
+  auto memsizes = get_memory_sizes_(nelements, 4, 0, 1);
 
   mem = cudautils::make_device_unique<double[]>(std::get<0>(memsizes), 0);
 
-  kcdata.data.hgcHEB_fCPerMIP_ = (double*)(mem.get());
-  kcdata.data.hgcHEB_cce_      = (double*)(kcdata.data.hgcHEB_fCPerMIP_ + nelements[0]);
-  kcdata.data.rcorr_           = (double*)(kcdata.data.hgcHEB_cce_ + nelements[1]);
-  kcdata.data.weights_         = (float*)(kcdata.data.rcorr_ + nelements[2]);
+  kcdata.data.hgcHEB_fCPerMIP_ = mem.get();
+  kcdata.data.hgcHEB_cce_      = kcdata.data.hgcHEB_fCPerMIP_ + nelements[0];
+  kcdata.data.rcorr_           = kcdata.data.hgcHEB_cce_ + nelements[1];
+  kcdata.data.weights_         = kcdata.data.rcorr_ + nelements[2];
+  kcdata.data.waferTypeL_      = reinterpret_cast<int*>(kcdata.data.weights_ + nelements[3]);
   kcdata.data.nbytes = std::get<0>(memsizes);
   kcdata.data.ndelem = std::get<1>(memsizes) + 3;
   kcdata.data.nfelem = std::get<2>(memsizes) + 0;
+  kcdata.data.nielem = std::get<3>(memsizes) + 0;
   kcdata.data.nuelem = 2;
   kcdata.data.nbelem = 1;
 }
@@ -164,19 +180,21 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGC
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(KernelConstantData<HGCeeUncalibratedRecHitConstantData>& kcdata, cudautils::host::noncached::unique_ptr<double[]>& mem)
 {
-  const std::vector<size_t> nelements = {kcdata.data.s_hgcEE_fCPerMIP_, kcdata.data.s_hgcEE_cce_, kcdata.data.s_hgcEE_noise_fC_, kcdata.data.s_rcorr_, kcdata.data.s_weights_};
-  std::tuple<size_t, size_t, size_t> memsizes = get_memory_sizes_(nelements, 4, 1);
+  const std::vector<size_t> nelements = {kcdata.data.s_hgcEE_fCPerMIP_, kcdata.data.s_hgcEE_cce_, kcdata.data.s_hgcEE_noise_fC_, kcdata.data.s_rcorr_, kcdata.data.s_weights_, kcdata.data.s_waferTypeL_};
+  auto memsizes = get_memory_sizes_(nelements, 5, 0, 1);
 
   mem = cudautils::make_host_noncached_unique<double[]>(std::get<0>(memsizes), 0);
 
-  kcdata.data.hgcEE_fCPerMIP_ = (double*)(mem.get());
-  kcdata.data.hgcEE_cce_      = (double*)(kcdata.data.hgcEE_fCPerMIP_ + nelements[0]);
-  kcdata.data.hgcEE_noise_fC_ = (double*)(kcdata.data.hgcEE_cce_ + nelements[1]);
-  kcdata.data.rcorr_          = (double*)(kcdata.data.hgcEE_noise_fC_ + nelements[2]);
-  kcdata.data.weights_        = (float*)(kcdata.data.rcorr_ + nelements[3]);
+  kcdata.data.hgcEE_fCPerMIP_ = mem.get();
+  kcdata.data.hgcEE_cce_      = kcdata.data.hgcEE_fCPerMIP_ + nelements[0];
+  kcdata.data.hgcEE_noise_fC_ = kcdata.data.hgcEE_cce_ + nelements[1];
+  kcdata.data.rcorr_          = kcdata.data.hgcEE_noise_fC_ + nelements[2];
+  kcdata.data.weights_        = kcdata.data.rcorr_ + nelements[3];
+  kcdata.data.waferTypeL_     = reinterpret_cast<int*>(kcdata.data.weights_ + nelements[4]);
   kcdata.data.nbytes = std::get<0>(memsizes);
   kcdata.data.ndelem = std::get<1>(memsizes) + 2;
   kcdata.data.nfelem = std::get<2>(memsizes) + 1;
+  kcdata.data.nielem = std::get<3>(memsizes) + 0;
   kcdata.data.nuelem = 2;
   kcdata.data.nbelem = 1;
 }
@@ -184,19 +202,21 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(Kerne
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(KernelConstantData<HGChefUncalibratedRecHitConstantData>& kcdata, cudautils::host::noncached::unique_ptr<double[]>& mem)
 {
-  const std::vector<size_t> nelements = {kcdata.data.s_hgcHEF_fCPerMIP_, kcdata.data.s_hgcHEF_cce_, kcdata.data.s_hgcHEF_noise_fC_, kcdata.data.s_rcorr_, kcdata.data.s_weights_};
-  std::tuple<size_t, size_t, size_t> memsizes = get_memory_sizes_(nelements, 4, 1);
+  const std::vector<size_t> nelements = {kcdata.data.s_hgcHEF_fCPerMIP_, kcdata.data.s_hgcHEF_cce_, kcdata.data.s_hgcHEF_noise_fC_, kcdata.data.s_rcorr_, kcdata.data.s_weights_, kcdata.data.s_waferTypeL_};
+  auto memsizes = get_memory_sizes_(nelements, 5, 0, 1);
 
   mem = cudautils::make_host_noncached_unique<double[]>(std::get<0>(memsizes), 0);
 
-  kcdata.data.hgcHEF_fCPerMIP_ = (double*)(mem.get());
-  kcdata.data.hgcHEF_cce_      = (double*)(kcdata.data.hgcHEF_fCPerMIP_ + nelements[0]);
-  kcdata.data.hgcHEF_noise_fC_ = (double*)(kcdata.data.hgcHEF_cce_ + nelements[1]);
-  kcdata.data.rcorr_           = (double*)(kcdata.data.hgcHEF_noise_fC_ + nelements[2]);
-  kcdata.data.weights_         = (float*)(kcdata.data.rcorr_ + nelements[3]);
+  kcdata.data.hgcHEF_fCPerMIP_ = mem.get();
+  kcdata.data.hgcHEF_cce_      = kcdata.data.hgcHEF_fCPerMIP_ + nelements[0];
+  kcdata.data.hgcHEF_noise_fC_ = kcdata.data.hgcHEF_cce_ + nelements[1];
+  kcdata.data.rcorr_           = kcdata.data.hgcHEF_noise_fC_ + nelements[2];
+  kcdata.data.weights_         = kcdata.data.rcorr_ + nelements[3];
+  kcdata.data.waferTypeL_      = reinterpret_cast<int*>(kcdata.data.weights_ + nelements[4]);
   kcdata.data.nbytes = std::get<0>(memsizes);
   kcdata.data.ndelem = std::get<1>(memsizes) + 2;
   kcdata.data.nfelem = std::get<2>(memsizes) + 0;
+  kcdata.data.nielem = std::get<3>(memsizes) + 0;
   kcdata.data.nuelem = 2;
   kcdata.data.nbelem = 1;
 }
@@ -204,18 +224,20 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(Kerne
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(KernelConstantData<HGChebUncalibratedRecHitConstantData>& kcdata, cudautils::host::noncached::unique_ptr<double[]>& mem)
 {
-  const std::vector<size_t> nelements = {kcdata.data.s_hgcHEB_fCPerMIP_, kcdata.data.s_hgcHEB_cce_, kcdata.data.s_rcorr_, kcdata.data.s_weights_};
-  std::tuple<size_t, size_t, size_t> memsizes = get_memory_sizes_(nelements, 3, 1);
+  const std::vector<size_t> nelements = {kcdata.data.s_hgcHEB_fCPerMIP_, kcdata.data.s_hgcHEB_cce_, kcdata.data.s_rcorr_, kcdata.data.s_weights_, kcdata.data.s_waferTypeL_};
+  auto memsizes = get_memory_sizes_(nelements, 4, 0, 1);
 
   mem = cudautils::make_host_noncached_unique<double[]>(std::get<0>(memsizes), 0);
 
-  kcdata.data.hgcHEB_fCPerMIP_ = (double*)(mem.get());
-  kcdata.data.hgcHEB_cce_      = (double*)(kcdata.data.hgcHEB_fCPerMIP_ + nelements[0]);
-  kcdata.data.rcorr_           = (double*)(kcdata.data.hgcHEB_cce_ + nelements[1]);
-  kcdata.data.weights_         = (float*)(kcdata.data.rcorr_ + nelements[2]);
+  kcdata.data.hgcHEB_fCPerMIP_ = mem.get();
+  kcdata.data.hgcHEB_cce_      = kcdata.data.hgcHEB_fCPerMIP_ + nelements[0];
+  kcdata.data.rcorr_           = kcdata.data.hgcHEB_cce_ + nelements[1];
+  kcdata.data.weights_         = kcdata.data.rcorr_ + nelements[2];
+  kcdata.data.waferTypeL_      = reinterpret_cast<int*>(kcdata.data.weights_ + nelements[3]);
   kcdata.data.nbytes = std::get<0>(memsizes);
   kcdata.data.ndelem = std::get<1>(memsizes) + 3;
   kcdata.data.nfelem = std::get<2>(memsizes) + 0;
+  kcdata.data.nielem = std::get<3>(memsizes) + 0;
   kcdata.data.nuelem = 2;
   kcdata.data.nbelem = 1;
 }
@@ -260,6 +282,7 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::run(KernelConstantDa
 {
   if (!std::is_same<T_IN, HGCUncalibratedRecHit>::value)
     throw cms::Exception("WrongTemplateType") << "The hgc_rechit_kernel_wrapper template does not support this type."; 
+  set_geometry_constants_<U>(kcdata);
 
   KernelConstantData<U> d_kcdata = kcdata;
   //allocate pinned memory for constants on the host
@@ -322,7 +345,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::convert_constant_dat
   for(unsigned int i=0; i<kcdata.data.s_rcorr_; ++i)
     kcdata.data.rcorr_[i] = kcdata.vdata.rcorr[i];
   for(unsigned int i=0; i<kcdata.data.s_weights_; ++i)
-    kcdata.data.weights_[i] = static_cast<float>( kcdata.vdata.weights[i] );
+    kcdata.data.weights_[i] = kcdata.vdata.weights[i];
+  for(unsigned int i=0; i<kcdata.data.s_waferTypeL_; ++i)
+    kcdata.data.waferTypeL_[i] = kcdata.vdata.waferTypeL[i];
 }
 
 template <class T_IN, class T_OUT>
@@ -337,7 +362,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::convert_constant_dat
   for(unsigned int i=0; i<kcdata.data.s_rcorr_; ++i)
     kcdata.data.rcorr_[i] = kcdata.vdata.rcorr[i];
   for(unsigned int i=0; i<kcdata.data.s_weights_; ++i)
-    kcdata.data.weights_[i] = static_cast<float>( kcdata.vdata.weights[i] );
+    kcdata.data.weights_[i] = kcdata.vdata.weights[i];
+  for(unsigned int i=0; i<kcdata.data.s_waferTypeL_; ++i)
+    kcdata.data.waferTypeL_[i] = kcdata.vdata.waferTypeL[i];
 }
 
 template <class T_IN, class T_OUT>
@@ -350,7 +377,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::convert_constant_dat
   for(unsigned int i=0; i<kcdata.data.s_rcorr_; ++i)
     kcdata.data.rcorr_[i] = kcdata.vdata.rcorr[i];
   for(unsigned int i=0; i<kcdata.data.s_weights_; ++i)
-    kcdata.data.weights_[i] = static_cast<float>( kcdata.vdata.weights[i] );
+    kcdata.data.weights_[i] = kcdata.vdata.weights[i];
+  for(unsigned int i=0; i<kcdata.data.s_waferTypeL_; ++i)
+    kcdata.data.waferTypeL_[i] = kcdata.vdata.waferTypeL[i];
 }
 
 template <>
@@ -390,6 +419,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>:
 }
 
 template class HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>;
+template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::set_geometry_constants_<HGCeeUncalibratedRecHitConstantData>(KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
+template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::set_geometry_constants_<HGChefUncalibratedRecHitConstantData>(KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
+template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::set_geometry_constants_<HGChebUncalibratedRecHitConstantData>(KernelConstantData<HGChebUncalibratedRecHitConstantData>&);
 template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::run<HGCeeUncalibratedRecHitConstantData>(KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
 template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::run<HGChefUncalibratedRecHitConstantData>(KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
 template void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>::run<HGChebUncalibratedRecHitConstantData>(KernelConstantData<HGChebUncalibratedRecHitConstantData>&);

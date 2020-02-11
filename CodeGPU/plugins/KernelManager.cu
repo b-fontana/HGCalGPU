@@ -60,12 +60,14 @@ void KernelManagerHGCalRecHit::reuse_device_pointers_()
   cudaCheck( cudaGetLastError() );
 }
 
-size_t KernelManagerHGCalRecHit::get_shared_memory_size_(const size_t& nd, const size_t& nf, const size_t& nu, const size_t& nb) {
+size_t KernelManagerHGCalRecHit::get_shared_memory_size_(const size_t& nd, const size_t& nf, const size_t& nu, const size_t& ni, const size_t& nb) {
   size_t dmem = nd*sizeof(double);
   size_t fmem = nf*sizeof(float);
   size_t umem = nu*sizeof(uint32_t);
+  size_t imem = ni*sizeof(int);
+  printf("Space waferTypeL_: %zu, %zu", ni, imem);
   size_t bmem = nb*sizeof(bool);
-  return dmem + fmem + umem + bmem;
+  return dmem + fmem + umem + imem + bmem;
 }
 
 void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>& h_kcdata, KernelConstantData<HGCeeUncalibratedRecHitConstantData>& d_kcdata)
@@ -75,15 +77,15 @@ void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGCeeUncalib
 
   printf("Running ee kernel with: %zu hits.\n", data_.nhits);
   printf("%d blocks being launched with %d threads (%d in total).\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x);
-  size_t nbytes_shared = get_shared_memory_size_(h_kcdata.data.ndelem, h_kcdata.data.nfelem, h_kcdata.data.nuelem, h_kcdata.data.nbelem);
+  size_t nbytes_shared = get_shared_memory_size_(h_kcdata.data.ndelem, h_kcdata.data.nfelem, h_kcdata.data.nuelem, h_kcdata.data.nielem, h_kcdata.data.nbelem);
   printf("NBytes: %zu\n", nbytes_shared);
-  ee_step1<<<nblocks_, nthreads_, nbytes_shared>>>( *(data_.d_2), *(data_.d_1), d_kcdata.data, data_.nhits );
+  ee_step1<<<nblocks_, nthreads_, 40000>>>( *(data_.d_2), *(data_.d_1), d_kcdata.data, data_.nhits );
   after_kernel_();
 
-  reuse_device_pointers_();
+  //reuse_device_pointers_();
 
-  ee_to_rechit<<<nblocks_,nthreads_>>>( *(data_.d_out), *(data_.d_1), d_kcdata.data, data_.nhits );
-  after_kernel_();
+  //ee_to_rechit<<<nblocks_,nthreads_>>>( *(data_.d_out), *(data_.d_1), d_kcdata.data, data_.nhits );
+  //after_kernel_();
 
   transfer_to_host_and_synchronize_();
 }
