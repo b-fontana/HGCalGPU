@@ -10,6 +10,14 @@ int wafer(uint32_t id)
   return (id >> kHGCalWaferOffset) & kHGCalWaferMask; 
 }
 
+__device__
+int layer(uint32_t id)
+{
+  static const int kHGCalLayerOffset = 20;
+  static const int kHGCalLayerMask = 0x1F;
+  return (id >> kHGCalLayerOffset) & kHGCalLayerMask; 
+}
+
 __device__ 
 void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si, bool*& sb, const HGCeeUncalibratedRecHitConstantData& cdata)
 {
@@ -19,15 +27,13 @@ void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si
   size_t size4 = cdata.s_rcorr_          + size3; 
   size_t size5 = cdata.s_weights_        + size4; 
   size_t size6 = cdata.s_waferTypeL_     + size5; 
-  if(tid == 0)
-    printf("%f, %f, %f, %f, %f, %f", size1, size2, size3, size4, size5, size6);
 
   if(tid == 0)
     sd[tid] = cdata.hgcEE_keV2DIGI_;
   else if(tid == 1)
     sd[tid] = cdata.hgceeUncalib2GeV_;
   else if(tid > 1 && tid < size1)
-    sd[tid] = cdata.hgcEE_fCPerMIP_[tid-2];
+      sd[tid] = cdata.hgcEE_fCPerMIP_[tid-2];
   else if(tid >= size1 && tid < size2)
     sd[tid] = cdata.hgcEE_cce_[tid-size1];
   else if(tid >= size2 && tid < size3)
@@ -37,13 +43,13 @@ void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si
   else if(tid >= size4 && tid < size5)
     sd[tid] = cdata.weights_[tid - size4];
   else if(tid >= size5 && tid < size6)
-    si[tid] = cdata.waferTypeL_[tid - size5];
+    si[tid - size5] = cdata.waferTypeL_[tid - size5];
   else if(tid == size6)
-    su[tid] = cdata.rangeMatch_;
+    su[0] = cdata.rangeMatch_;
   else if(tid == size6 + 1)
-    su[tid] = cdata.rangeMask_;
+    su[1] = cdata.rangeMask_;
   else if(tid == size6 + 2)
-    sb[tid] = cdata.hgcEE_isSiFE_;
+    sb[0] = cdata.hgcEE_isSiFE_;
 
   __syncthreads();
 }
@@ -51,39 +57,30 @@ void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si
 __global__
 void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, size_t length)
 {
-  extern __shared__ double s[];
-  /*
-  printf("check\n");
-  __syncthreads();
   unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
+
+  extern __shared__ double s[];
+  double   *sd = s;
+  float    *sf = (float*)   (sd + cdata.ndelem);
+  uint32_t *su = (uint32_t*)(sf + cdata.nfelem);
+  int      *si = (int*)     (su + cdata.nuelem);
+  bool     *sb = (bool*)    (si + cdata.nielem); //erro!!!!!
+  set_shared_memory(threadIdx.x, sd, sf, su, si, sb, cdata);
   if(tid==0)
     {
-      printf("%zu, %zu, %zu, %zu, %zu", cdata.ndelem, cdata.nfelem, cdata.nuelem, cdata.nielem, cdata.nbelem);
-
-      extern __shared__ double s[];
-      double   *sd = s;
-      float    *sf = (float*)   (sd + cdata.ndelem);
-      uint32_t *su = (uint32_t*)(sf + cdata.nfelem);
-      int      *si = (int*)     (su + cdata.nuelem);
-      printf("here 5\n");
-      bool     *sb = (bool*)    (si + cdata.nielem); //erro!!!!!
-      printf("here 6\n");
-      set_shared_memory(threadIdx.x, sd, sf, su, si, sb, cdata);
-      printf("here 7\n");
-
+      printf("NELEMENTS: %d, %d, %d, %d, %d\n", cdata.ndelem, cdata.nfelem, cdata.nuelem, cdata.nielem, cdata.nbelem);
+      printf("%f\n", sd[0]);
+      printf("%f\n", sd[1]);
       printf("%f\n", sd[2]);
-      printf("%d\n", si[3]);
+      printf("%d, %d, %d\n", si[0], si[1], si[2]);
       printf("%d\n", su[1]);
       printf("%d\n", sb[0]);
     }
-
-  __syncthreads();
 
   for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
       dst_soa.amplitude[i] = src_soa.amplitude[i];
     }
-  */
 }
 
 __global__

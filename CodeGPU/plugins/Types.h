@@ -3,6 +3,8 @@
 
 #include <vector>
 
+typedef int LENGTHSIZE;
+
 class HGCConstantVectorData {
  public:
   std::vector<double> fCPerMIP;
@@ -26,19 +28,19 @@ class HGCeeUncalibratedRecHitConstantData {
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
   bool hgcEE_isSiFE_;
-  size_t ndoubles;
-  size_t nbytes;
-  size_t ndelem;
-  size_t nfelem;
-  size_t nuelem;
-  size_t nielem;
-  size_t nbelem;
-  size_t s_hgcEE_fCPerMIP_;
-  size_t s_hgcEE_cce_;
-  size_t s_hgcEE_noise_fC_;
-  size_t s_rcorr_;
-  size_t s_weights_;
-  size_t s_waferTypeL_;
+  LENGTHSIZE ndoubles;
+  LENGTHSIZE nbytes;
+  LENGTHSIZE ndelem;
+  LENGTHSIZE nfelem;
+  LENGTHSIZE nuelem;
+  LENGTHSIZE nielem;
+  LENGTHSIZE nbelem;
+  LENGTHSIZE s_hgcEE_fCPerMIP_;
+  LENGTHSIZE s_hgcEE_cce_;
+  LENGTHSIZE s_hgcEE_noise_fC_;
+  LENGTHSIZE s_rcorr_;
+  LENGTHSIZE s_weights_;
+  LENGTHSIZE s_waferTypeL_;
 };
 
 class HGChefUncalibratedRecHitConstantData {
@@ -53,19 +55,20 @@ class HGChefUncalibratedRecHitConstantData {
   int *waferTypeL_;
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
+  uint32_t fhOffset_;
   bool hgcHEF_isSiFE_;
-  size_t nbytes;
-  size_t ndelem;
-  size_t nfelem;
-  size_t nuelem;
-  size_t nielem;
-  size_t nbelem;
-  size_t s_hgcHEF_fCPerMIP_;
-  size_t s_hgcHEF_cce_;
-  size_t s_hgcHEF_noise_fC_;
-  size_t s_rcorr_;
-  size_t s_weights_;
-  size_t s_waferTypeL_;
+  LENGTHSIZE nbytes;
+  LENGTHSIZE ndelem;
+  LENGTHSIZE nfelem;
+  LENGTHSIZE nuelem;
+  LENGTHSIZE nielem;
+  LENGTHSIZE nbelem;
+  LENGTHSIZE s_hgcHEF_fCPerMIP_;
+  LENGTHSIZE s_hgcHEF_cce_;
+  LENGTHSIZE s_hgcHEF_noise_fC_;
+  LENGTHSIZE s_rcorr_;
+  LENGTHSIZE s_weights_;
+  LENGTHSIZE s_waferTypeL_;
 };
 
 class HGChebUncalibratedRecHitConstantData {
@@ -80,18 +83,19 @@ class HGChebUncalibratedRecHitConstantData {
   int *waferTypeL_;
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
+  uint32_t fhOffset_;
   bool hgcHEB_isSiFE_;
-  size_t nbytes;
-  size_t ndelem;
-  size_t nfelem;
-  size_t nuelem;
-  size_t nielem;
-  size_t nbelem;
-  size_t s_hgcHEB_fCPerMIP_;
-  size_t s_hgcHEB_cce_;
-  size_t s_rcorr_;
-  size_t s_weights_;
-  size_t s_waferTypeL_;
+  LENGTHSIZE nbytes;
+  LENGTHSIZE ndelem;
+  LENGTHSIZE nfelem;
+  LENGTHSIZE nuelem;
+  LENGTHSIZE nielem;
+  LENGTHSIZE nbelem;
+  LENGTHSIZE s_hgcHEB_fCPerMIP_;
+  LENGTHSIZE s_hgcHEB_cce_;
+  LENGTHSIZE s_rcorr_;
+  LENGTHSIZE s_weights_;
+  LENGTHSIZE s_waferTypeL_;
 };
 
 class HGCUncalibratedRecHitSoA {
