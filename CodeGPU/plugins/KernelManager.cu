@@ -80,10 +80,10 @@ void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGCeeUncalib
   ee_step1<<<nblocks_, nthreads_, nbytes_shared>>>( *(data_.d_2), *(data_.d_1), d_kcdata.data, data_.nhits );
   after_kernel_();
 
-  //reuse_device_pointers_();
+  reuse_device_pointers_();
 
-  //ee_to_rechit<<<nblocks_,nthreads_>>>( *(data_.d_out), *(data_.d_1), d_kcdata.data, data_.nhits );
-  //after_kernel_();
+  ee_to_rechit<<<nblocks_, nthreads_, nbytes_shared>>>( *(data_.d_out), *(data_.d_1), d_kcdata.data, data_.nhits );
+  after_kernel_();
 
   transfer_to_host_and_synchronize_();
 }

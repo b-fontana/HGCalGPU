@@ -5,6 +5,8 @@
 
 typedef int LENGTHSIZE;
 
+enum FlagsGPU {kGood=0, kPoorReco, kOutOfTime, kFaultyHardware, kNoisy, kPoorCalib, kSaturated, kDead, kKilled, kWeird, kDiWerid, kUnknown};
+
 class HGCConstantVectorData {
  public:
   std::vector<double> fCPerMIP;
@@ -109,17 +111,18 @@ public:
   uint32_t *flags;
   uint32_t *aux;
   uint32_t *id;
-  size_t nbytes;
+  LENGTHSIZE nbytes;
 };
 
 class HGCRecHitSoA {
  public:
   float *energy;
   float *time;
+  float *timeError;
   uint32_t *id;
-  uint32_t *flags;
   uint32_t *flagBits;
-  size_t nbytes;
+  uint8_t *son;
+  LENGTHSIZE nbytes;
 };
 
 #endif /* _TYPES_H_ */

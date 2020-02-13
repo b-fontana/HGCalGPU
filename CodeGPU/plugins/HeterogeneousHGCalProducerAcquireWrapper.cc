@@ -15,7 +15,7 @@ HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::HeterogeneousHGCalProduce
   if( !(det_ == DetId::HGCalEE or det_ == DetId::HGCalHSi or det_ == DetId::HGCalHSc) )
     throw cms::Exception("WrongDetectorType") << "The specified detector is wrong.";
 
-  stride_ = ( (nhits_-1)/32 + 1 ) * 32;
+  stride_ = ( (nhits_-1)/32 + 1 ) * 32; //align to warp boundary
   hits_ = hits;
   out_data_.reserve(nhits_);
   tools_.reset(new hgcal::RecHitTools());
@@ -138,9 +138,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(Ker
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGCUncalibratedRecHitSoA*& soa1, HGCUncalibratedRecHitSoA*& soa2, HGCRecHitSoA*& soa3, cudautils::device::unique_ptr<float[]>& mem)
 {
-  std::vector<LENGTHSIZE> sizes = {6*sizeof(float), 3*sizeof(uint32_t),  //soa1
-			       6*sizeof(float), 3*sizeof(uint32_t),  //soa2
-			       2*sizeof(float), 3*sizeof(uint32_t)}; //soa3
+  std::vector<LENGTHSIZE> sizes = {6*sizeof(float), 3*sizeof(uint32_t),                     //soa1
+				   6*sizeof(float), 3*sizeof(uint32_t),                     //soa2
+				   3*sizeof(float), 2*sizeof(uint32_t), 1*sizeof(uint8_t)}; //soa3
   LENGTHSIZE size_tot = std::accumulate( sizes.begin(), sizes.end(), 0);
   mem = cudautils::make_device_unique<float[]>(stride_ * size_tot, 0);
 
@@ -160,8 +160,9 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGC
 
   soa3->energy        = (float*)(soa2->OOTchi2      + stride_);
   soa3->time          = (float*)(soa3->energy       + stride_);
+  soa3->timeError     = (float*)(soa3->time         + stride_);
 
-  soa1->flags         = (uint32_t*)(soa3->time      + stride_);
+  soa1->flags         = (uint32_t*)(soa3->timeError + stride_);
   soa1->aux           = (uint32_t*)(soa1->flags     + stride_);
   soa1->id            = (uint32_t*)(soa1->aux       + stride_);
 
@@ -170,8 +171,8 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_device_(HGC
   soa2->id            = (uint32_t*)(soa2->aux       + stride_);
 
   soa3->id            = (uint32_t*)(soa2->id        + stride_);
-  soa3->flags         = (uint32_t*)(soa3->id        + stride_);
-  soa3->flagBits      = (uint32_t*)(soa3->flags     + stride_);
+  soa3->flagBits      = (uint32_t*)(soa3->id        + stride_);
+  soa3->son           = (uint8_t*)(soa3->flagBits   + stride_);
 
   soa1->nbytes = std::accumulate(sizes.begin(), sizes.begin()+2, 0);
   soa2->nbytes = std::accumulate(sizes.begin()+2, sizes.begin()+4, 0);
@@ -248,7 +249,8 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(HGCUn
 {
   LENGTHSIZE size1 = (LENGTHSIZE)6*sizeof(float);
   LENGTHSIZE size2 = (LENGTHSIZE)3*sizeof(uint32_t);
-  mem = cudautils::make_host_noncached_unique<float[]>(stride_ * (size1+size2), 0);
+  LENGTHSIZE size_tot = size1 + size2;
+  mem = cudautils::make_host_noncached_unique<float[]>(stride_ * size_tot, 0);
 
   soa->amplitude     = (float*)(mem.get());
   soa->pedestal      = (float*)(soa->amplitude    + stride_);
@@ -259,22 +261,24 @@ void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(HGCUn
   soa->flags         = (uint32_t*)(soa->OOTchi2   + stride_);
   soa->aux           = (uint32_t*)(soa->flags     + stride_);
   soa->id            = (uint32_t*)(soa->aux       + stride_);
-  soa->nbytes = size1 + size2;
+  soa->nbytes = size_tot;
 }
 
 template <typename T_IN, typename T_OUT>
 void HeterogeneousHGCalProducerAcquireWrapper<T_IN, T_OUT>::allocate_host_(HGCRecHitSoA*& soa, cudautils::host::unique_ptr<float[]>& mem)
 {
-  LENGTHSIZE size1 = (LENGTHSIZE)2*sizeof(float);
-  LENGTHSIZE size2 = (LENGTHSIZE)3*sizeof(uint32_t);
-  mem = cudautils::make_host_unique<float[]>(stride_*(size1+size2), 0);
+  LENGTHSIZE size1 = (LENGTHSIZE)3*sizeof(float);
+  LENGTHSIZE size2 = (LENGTHSIZE)2*sizeof(uint32_t);
+  LENGTHSIZE size3 = (LENGTHSIZE)1*sizeof(uint8_t);
+  LENGTHSIZE size_tot = size1 + size2 + size3;
+  mem = cudautils::make_host_unique<float[]>(stride_*size_tot, 0);
 
   soa->energy     = (float*)(mem.get());
-  soa->time       = (float*)(soa->energy   + stride_);
-  soa->id         = (uint32_t*)(soa->time  + stride_);
-  soa->flags      = (uint32_t*)(soa->id    + stride_);
-  soa->flagBits   = (uint32_t*)(soa->flags + stride_);
-  soa->nbytes = size1 + size2;
+  soa->time       = (float*)(soa->energy     + stride_);
+  soa->id         = (uint32_t*)(soa->time    + stride_);
+  soa->flagBits   = (uint32_t*)(soa->id      + stride_);
+  soa->son        = (uint8_t*)(soa->flagBits + stride_);
+  soa->nbytes = size_tot;
 }
 
 template <typename T_IN, typename T_OUT>
@@ -415,7 +419,7 @@ void HeterogeneousHGCalProducerAcquireWrapper<HGCUncalibratedRecHit, HGCRecHit>:
   for(uint i=0; i<nhits_; ++i)
     {
       DetId id_converted( new_soa_->id[i] );
-      out_data_[i] = HGCRecHit(id_converted, new_soa_->energy[i], new_soa_->time[i], new_soa_->flags[i], new_soa_->flagBits[i]);
+      out_data_[i] = HGCRecHit(id_converted, new_soa_->energy[i], new_soa_->time[i], 0/*new_soa_->flags[i]*/, new_soa_->flagBits[i]);
     }
 }
 
