@@ -36,10 +36,11 @@ class KernelConstantData {
 template <typename TYPE_IN, typename TYPE_OUT>
   class KernelModifiableData {
  public:
- KernelModifiableData(size_t nhits_, TYPE_IN *h_in_, TYPE_IN *d_1_, TYPE_IN *d_2_, TYPE_OUT *d_out_, TYPE_OUT *h_out_):
-  nhits(nhits_), h_in(h_in_), d_1(d_1_), d_2(d_2_), d_out(d_out_), h_out(h_out_) {}
+ KernelModifiableData(LENGTHSIZE nhits_, LENGTHSIZE stride_, TYPE_IN *h_in_, TYPE_IN *d_1_, TYPE_IN *d_2_, TYPE_OUT *d_out_, TYPE_OUT *h_out_):
+  nhits(nhits_), stride(stride_), h_in(h_in_), d_1(d_1_), d_2(d_2_), d_out(d_out_), h_out(h_out_) {}
 
-  size_t nhits;
+  LENGTHSIZE nhits;
+  LENGTHSIZE stride;
   TYPE_IN *h_in;
   TYPE_IN *d_1, *d_2;
   TYPE_OUT *d_out;
@@ -48,7 +49,7 @@ template <typename TYPE_IN, typename TYPE_OUT>
 
 class KernelManagerHGCalRecHit {
  public:
-  KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>, const DetId::Detector&);
+  KernelManagerHGCalRecHit(KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>);
   ~KernelManagerHGCalRecHit();
   void run_kernels(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
   void run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
@@ -57,7 +58,7 @@ class KernelManagerHGCalRecHit {
 
  private:
   void after_kernel_();
-  size_t get_shared_memory_size_(const size_t&, const size_t&, const size_t&, const size_t&, const size_t&);
+  LENGTHSIZE get_shared_memory_size_(const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&);
   void assign_and_transfer_to_device_();
   void assign_and_transfer_to_device_(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>&, KernelConstantData<HGCeeUncalibratedRecHitConstantData>&);
   void assign_and_transfer_to_device_(const KernelConstantData<HGChefUncalibratedRecHitConstantData>&, KernelConstantData<HGChefUncalibratedRecHitConstantData>&);
@@ -65,7 +66,8 @@ class KernelManagerHGCalRecHit {
   void transfer_to_host_and_synchronize_();
   void reuse_device_pointers_();
 
-  const DetId::Detector dtype_;
+  LENGTHSIZE nbytes_host_;
+  LENGTHSIZE nbytes_device_;
   const std::vector<HGCUncalibratedRecHitSoA> h_oldhits_;
   KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> data_;
 };

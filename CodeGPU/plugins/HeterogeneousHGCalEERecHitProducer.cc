@@ -4,6 +4,7 @@
 HeterogeneousHGCalEERecHitsProd::HeterogeneousHGCalEERecHitsProd(const edm::ParameterSet& ps):
   token_(consumes<HGCUncalibratedRecHitCollection>(ps.getParameter<edm::InputTag>("HGCEEUncalibRecHitsTok")))
 {
+  nhitsmax_                = ps.getParameter<>("nhitsmax");
   cdata_.hgcEE_keV2DIGI_   = ps.getParameter<double>("HGCEE_keV2DIGI");
   cdata_.rangeMatch_       = ps.getParameter<uint32_t>("rangeMatch");
   cdata_.rangeMask_        = ps.getParameter<uint32_t>("rangeMask");

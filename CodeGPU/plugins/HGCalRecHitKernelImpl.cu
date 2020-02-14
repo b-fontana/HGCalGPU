@@ -1,5 +1,6 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <inttypes.h>
 #include "HGCalRecHitKernelImpl.cuh"
 
 __device__
@@ -66,9 +67,9 @@ void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si
   else if(tid >= size2 && tid < size3)
     sd[tid] = cdata.hgcEE_noise_fC_[tid-size2];
   else if(tid >= size3 && tid < size4)
-    sd[tid] = cdata.rcorr_[tid - size3];
+      sd[tid] = cdata.rcorr_[tid - size3];
   else if(tid >= size4 && tid < size5)
-    sd[tid] = cdata.weights_[tid - size4];
+      sd[tid] = cdata.weights_[tid - size4];
   else if(tid >= size5 && tid < size6)
     si[tid - size5] = cdata.waferTypeL_[tid - size5];
   else if(tid == size6)
@@ -82,28 +83,28 @@ void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si
 }
 
 __global__
-void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, size_t length)
+void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
   //this kernel is currently doing nothing
   unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
   for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
-      dst_soa.amplitude[i] = src_soa.amplitude[i];
+      printf("QQQQ %" PRIu32 "\n", src_soa.id[i]);
     }
 }
 
 __global__
-void hef_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChefUncalibratedRecHitConstantData cdata, size_t length)
+void hef_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChefUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
 }
 
 __global__
-void heb_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChebUncalibratedRecHitConstantData cdata, size_t length)
+void heb_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChebUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
 }
 
 __global__
-void ee_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, size_t length)
+void ee_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
   unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -122,9 +123,10 @@ void ee_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const 
   bool     *sb = (bool*)    (si + cdata.nielem);
   set_shared_memory(threadIdx.x, sd, sf, su, si, sb, cdata, size1, size2, size3, size4, size5, size6);
 
-  for (size_t i = tid; i < length; i += blockDim.x * gridDim.x)
+  for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
       dst_soa.id[i] = src_soa.id[i];
+      printf("ID: %" PRIu32 ", %" PRIu32 "\n", src_soa.id[i], dst_soa.id[i]);
       int l = layer(dst_soa.id[i]);
       double weight = get_weight_from_layer(size4, l, sd);
       double rcorr = get_thickness_correction(size3, sd, cdata);
@@ -132,23 +134,27 @@ void ee_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const 
       double cce_correction = get_cce_correction(size1, sd, cdata);
       double fCPerMIP = get_fCPerMIP(2, sd, cdata);
       double sigmaNoiseGeV = 1e-3 * weight * rcorr * noise / fCPerMIP;
-      
+
       //makeRecHit
       dst_soa.energy[i] = src_soa.amplitude[i] * weight * 0.001f * rcorr / cce_correction;
       dst_soa.time[i] = src_soa.jitter[i];
       dst_soa.flagBits[i] |= (0x1 << FlagsGPU::kGood);
       dst_soa.son[i] = nearbyintf( fmaxf(32.f, dst_soa.energy[i]/sigmaNoiseGeV) / ( 32.f * ((1 << 8)-1) ) );
       dst_soa.timeError[i] = 1.f; //change!!!!!!!!!!!!
+
+      printf("quant %d: %d, %d, %f, %f, %f, %f, %f, %f\n", i, l, dst_soa.id[i], weight, rcorr, noise, cce_correction, fCPerMIP, sigmaNoiseGeV);
+      printf("src %d: %f, %f, %f, %f, %f, %f, %d, %d, %d\n", i, src_soa.amplitude[i], src_soa.pedestal[i], src_soa.jitter[i], src_soa.chi2[i], src_soa.OOTamplitude[i], src_soa.OOTchi2[i], (int)src_soa.flags[i], (int)src_soa.aux[i], (int)src_soa.id[i]);
+      printf("dst %d: %f, %f, %f, %d, %d, %d\n", i, dst_soa.energy[i], dst_soa.time[i], dst_soa.timeError[i], dst_soa.id[i], dst_soa.flagBits[i], dst_soa.son[i]);
     }
 }
 
 __global__
-void hef_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChefUncalibratedRecHitConstantData cdata, size_t length)
+void hef_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChefUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
 }
 
 __global__
-void heb_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChebUncalibratedRecHitConstantData cdata, size_t length)
+void heb_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChebUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
 }
 

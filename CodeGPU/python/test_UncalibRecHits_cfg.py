@@ -30,10 +30,11 @@ process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string("noDuplicateCheck"))
 
 process.options = cms.untracked.PSet(
-    wantSummary = cms.untracked.bool( False ))
+    wantSummary = cms.untracked.bool( False )) #add option for edmStreams
 
 process.HeterogeneousHGCalEERecHits = cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
                                                      HGCEEUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'),
+                                                     nhitsmax       = 40000,
                                                      HGCEE_keV2DIGI = HGCalRecHit.__dict__['HGCEE_keV2DIGI'],
                                                      HGCEE_fCPerMIP = HGCalRecHit.__dict__['HGCEE_fCPerMIP'],
                                                      HGCEE_isSiFE   = HGCalRecHit.__dict__['HGCEE_isSiFE'],
