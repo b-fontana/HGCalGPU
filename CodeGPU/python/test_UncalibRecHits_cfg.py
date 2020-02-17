@@ -34,7 +34,7 @@ process.options = cms.untracked.PSet(
 
 process.HeterogeneousHGCalEERecHits = cms.EDProducer('HeterogeneousHGCalEERecHitsProd',
                                                      HGCEEUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'),
-                                                     nhitsmax       = 40000,
+                                                     nhitsmax       = cms.uint32(40000),
                                                      HGCEE_keV2DIGI = HGCalRecHit.__dict__['HGCEE_keV2DIGI'],
                                                      HGCEE_fCPerMIP = HGCalRecHit.__dict__['HGCEE_fCPerMIP'],
                                                      HGCEE_isSiFE   = HGCalRecHit.__dict__['HGCEE_isSiFE'],
