@@ -54,6 +54,16 @@ double get_fCPerMIP(const LENGTHSIZE& padding, double *& sd, const HGCeeUncalibr
 }
 
 __device__ 
+double get_time_resolution(float son, float *& sf)
+{
+  float max = fmaxf(son, sf[0]); //this max trick avoids if...elseif...else condition
+  float aterm = sf[2];
+  float cterm = sf[3];
+  float val = sqrt( __fdividef(aterm,max)*__fdividef(aterm,max) + cterm*cterm );
+  return val;
+}
+
+__device__ 
 void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si, bool*& sb, const HGCeeUncalibratedRecHitConstantData& cdata, const LENGTHSIZE& size1, const LENGTHSIZE& size2, const LENGTHSIZE& size3, const LENGTHSIZE& size4, const LENGTHSIZE& size5, const LENGTHSIZE& size6)
 {
   if(tid == 0)
@@ -72,14 +82,32 @@ void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si
       sd[tid] = cdata.weights_[tid - size4];
   else if(tid >= size5 && tid < size6)
     si[tid - size5] = cdata.waferTypeL_[tid - size5];
-  else if(tid == size6)
-    su[0] = cdata.rangeMatch_;
   else if(tid == size6 + 1)
-    su[1] = cdata.rangeMask_;
+    sf[0] = (cdata.xmin_ > 0) ? cdata.xmin_ : 0.1;
   else if(tid == size6 + 2)
+    sf[1] = cdata.xmax_;
+  else if(tid == size6 + 3)
+    sf[2] = cdata.aterm_;
+  else if(tid == size6 + 4)
+    sf[3] = cdata.cterm_;
+  else if(tid == size6 + 5)
+    su[0] = cdata.rangeMatch_;
+  else if(tid == size6 + 6)
+    su[1] = cdata.rangeMask_;
+  else if(tid == size6 + 7)
     sb[0] = cdata.hgcEE_isSiFE_;
 
   __syncthreads();
+}
+
+__device__ 
+void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si, bool*& sb, const HGChefUncalibratedRecHitConstantData& cdata, const LENGTHSIZE& size1, const LENGTHSIZE& size2, const LENGTHSIZE& size3, const LENGTHSIZE& size4, const LENGTHSIZE& size5, const LENGTHSIZE& size6)
+{
+}
+
+__device__ 
+void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si, bool*& sb, const HGChebUncalibratedRecHitConstantData& cdata, const LENGTHSIZE& size1, const LENGTHSIZE& size2, const LENGTHSIZE& size3, const LENGTHSIZE& size4, const LENGTHSIZE& size5, const LENGTHSIZE& size6)
+{
 }
 
 __global__
@@ -90,8 +118,7 @@ void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa
   unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
   for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
-      //printf("WWWW %d\n", tid);
-      printf("QQQQ %" PRIu32 "\n", src_soa.amplitude[0]);
+      dst_soa.amplitude[i] = src_soa.amplitude[i];
     }
 }
 
@@ -128,21 +155,21 @@ void ee_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const 
   for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
       dst_soa.id[i] = src_soa.id[i];
-      printf("ID: %" PRIu32 ", %" PRIu32 "\n", src_soa.id[i], dst_soa.id[i]);
       int l = layer(dst_soa.id[i]);
       double weight = get_weight_from_layer(size4, l, sd);
       double rcorr = get_thickness_correction(size3, sd, cdata);
       double noise = get_noise(size2, sd, cdata);
       double cce_correction = get_cce_correction(size1, sd, cdata);
       double fCPerMIP = get_fCPerMIP(2, sd, cdata);
-      double sigmaNoiseGeV = 1e-3 * weight * rcorr * noise / fCPerMIP;
+      double sigmaNoiseGeV = 1e-3 * weight * rcorr * __fdividef( noise,  fCPerMIP );
 
       //makeRecHit
-      dst_soa.energy[i] = src_soa.amplitude[i] * weight * 0.001f * rcorr / cce_correction;
+      dst_soa.energy[i] = src_soa.amplitude[i] * weight * 0.001f * __fdividef(rcorr, cce_correction);
       dst_soa.time[i] = src_soa.jitter[i];
       dst_soa.flagBits[i] |= (0x1 << FlagsGPU::kGood);
-      dst_soa.son[i] = nearbyintf( fmaxf(32.f, dst_soa.energy[i]/sigmaNoiseGeV) / ( 32.f * ((1 << 8)-1) ) );
-      dst_soa.timeError[i] = 1.f; //change!!!!!!!!!!!!
+      float son = __fdividef( dst_soa.energy[i], sigmaNoiseGeV);
+      dst_soa.son[i] = nearbyintf( fmaxf(32.f, son) / ( 32.f * ((1 << 8)-1) ) );
+      dst_soa.timeError[i] = get_time_resolution( son, sf );
 
       printf("quant %d: %d, %d, %f, %f, %f, %f, %f, %f\n", i, l, dst_soa.id[i], weight, rcorr, noise, cce_correction, fCPerMIP, sigmaNoiseGeV);
       printf("src %d: %f, %f, %f, %f, %f, %f, %d, %d, %d\n", i, src_soa.amplitude[i], src_soa.pedestal[i], src_soa.jitter[i], src_soa.chi2[i], src_soa.OOTamplitude[i], src_soa.OOTchi2[i], (int)src_soa.flags[i], (int)src_soa.aux[i], (int)src_soa.id[i]);
@@ -158,6 +185,7 @@ void hef_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const
 __global__
 void heb_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChebUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
+  //dst_soa.timeError[i] = -1.;
 }
 
 /*

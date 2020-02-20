@@ -33,7 +33,7 @@ namespace memory {
       kcdata->data.waferTypeL_     = reinterpret_cast<int*>(kcdata->data.weights_ + nelements[4]);
       kcdata->data.nbytes = std::get<0>(memsizes);
       kcdata->data.ndelem = std::get<1>(memsizes) + 2;
-      kcdata->data.nfelem = std::get<2>(memsizes) + 0;
+      kcdata->data.nfelem = std::get<2>(memsizes) + 4;
       kcdata->data.nielem = std::get<3>(memsizes) + 0;
       kcdata->data.nuelem = 2;
       kcdata->data.nbelem = 1;
@@ -53,7 +53,7 @@ namespace memory {
       kcdata->data.waferTypeL_      = reinterpret_cast<int*>(kcdata->data.weights_ + nelements[4]);
       kcdata->data.nbytes = std::get<0>(memsizes);
       kcdata->data.ndelem = std::get<1>(memsizes) + 2;
-      kcdata->data.nfelem = std::get<2>(memsizes) + 0;
+      kcdata->data.nfelem = std::get<2>(memsizes) + 4;
       kcdata->data.nielem = std::get<3>(memsizes) + 0;
       kcdata->data.nuelem = 3;
       kcdata->data.nbelem = 1;

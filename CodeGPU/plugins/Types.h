@@ -27,6 +27,10 @@ class HGCeeUncalibratedRecHitConstantData {
   double *rcorr_;
   double *weights_;
   int *waferTypeL_;
+  float xmin_;
+  float xmax_;
+  float aterm_;
+  float cterm_;
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
   bool hgcEE_isSiFE_;
@@ -55,6 +59,10 @@ class HGChefUncalibratedRecHitConstantData {
   double *rcorr_;
   double *weights_;
   int *waferTypeL_;
+  float xmin_;
+  float xmax_;
+  float aterm_;
+  float cterm_;
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
   uint32_t fhOffset_;

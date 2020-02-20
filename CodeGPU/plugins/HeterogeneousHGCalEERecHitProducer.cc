@@ -5,6 +5,10 @@ HeterogeneousHGCalEERecHitsProd::HeterogeneousHGCalEERecHitsProd(const edm::Para
 {
   nhitsmax_                = ps.getParameter<uint32_t>("nhitsmax");
   cdata_.hgcEE_keV2DIGI_   = ps.getParameter<double>("HGCEE_keV2DIGI");
+  cdata_.xmin_             = ps.getParameter<double>("minValSiPar"); //float
+  cdata_.xmax_             = ps.getParameter<double>("maxValSiPar"); //float
+  cdata_.aterm_            = ps.getParameter<double>("constSiPar"); //float
+  cdata_.cterm_            = ps.getParameter<double>("noiseSiPar"); //float
   cdata_.rangeMatch_       = ps.getParameter<uint32_t>("rangeMatch");
   cdata_.rangeMask_        = ps.getParameter<uint32_t>("rangeMask");
   cdata_.hgcEE_isSiFE_     = ps.getParameter<bool>("HGCEE_isSiFE");
@@ -74,10 +78,10 @@ void HeterogeneousHGCalEERecHitsProd::acquire(edm::Event const& event, edm::Even
   const auto &hits_ee = *handle_ee_;
   unsigned int nhits = hits_ee.size();
   convert_collection_data_to_soa_(hits_ee, old_soa_, nhits);
-  std::cout << "Address outside before Manager: " << d_oldhits_->amplitude << std::endl;
+
   kmdata_ = new KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA>(nhitsmax_, stride_, old_soa_, d_oldhits_, d_newhits_, d_newhits_final_, h_newhits_);
   KernelManagerHGCalRecHit kernel_manager(kmdata_);
-  std::cout << "check2_v2"  << std::endl;
+
   kernel_manager.run_kernels(h_kcdata_, d_kcdata_);
   std::cout << "check3"  << std::endl;
   new_soa_ = kernel_manager.get_output();

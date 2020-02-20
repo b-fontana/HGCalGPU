@@ -19,7 +19,7 @@ process.load('RecoLocalCalo.HGCalRecProducers.HGCalRecHit_cfi')
 process.load('SimCalorimetry.HGCalSimProducers.hgcalDigitizer_cfi')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32( 1 ))
+    input = cms.untracked.int32( 2 ))
 
 fNames = ['file:/afs/cern.ch/user/b/bfontana/CMSSW_11_0_0_pre11_Patatrack/src/UserCode/Samples/20495.0_CloseByParticleGun_CE_E_Front_200um+CE_E_Front_200um_2026D41_GenSimHLBeamSpotFull+DigiFullTrigger_2026D41+RecoFullGlobal_2026D41+HARVESTFullGlobal_2026D41/step3.root']
 keep = 'keep *'
@@ -35,6 +35,10 @@ process.HeterogeneousHGCalEERecHits = cms.EDProducer('HeterogeneousHGCalEERecHit
                                                      HGCEEUncalibRecHitsTok = cms.InputTag('HGCalUncalibRecHit', 'HGCEEUncalibRecHits'),
                                                      nhitsmax       = cms.uint32(40000),
                                                      HGCEE_keV2DIGI = HGCalRecHit.__dict__['HGCEE_keV2DIGI'],
+                                                     minValSiPar    = HGCalRecHit.__dict__['minValSiPar'],
+                                                     maxValSiPar    = HGCalRecHit.__dict__['maxValSiPar'],
+                                                     constSiPar     = HGCalRecHit.__dict__['constSiPar'],
+                                                     noiseSiPar     = HGCalRecHit.__dict__['noiseSiPar'],
                                                      HGCEE_fCPerMIP = HGCalRecHit.__dict__['HGCEE_fCPerMIP'],
                                                      HGCEE_isSiFE   = HGCalRecHit.__dict__['HGCEE_isSiFE'],
                                                      HGCEE_noise_fC = HGCalRecHit.__dict__['HGCEE_noise_fC'],
@@ -54,10 +58,4 @@ fNameOut = 'out'
 #convert this to a task!!!!!
 #process.path = cms.Path( process.HeterogeneousHGCalEERecHits * process.HeterogeneousHGCalHEFRecHits * process.HeterogeneousHGCalHEBRecHits)
 process.path = cms.Path( process.HeterogeneousHGCalEERecHits )
-<<<<<<< HEAD
-=======
-process.out = cms.OutputModule("PoolOutputModule", 
-                               fileName = cms.untracked.string(fNameOut+'.root'))
-process.outpath = cms.EndPath(process.out)
-
->>>>>>> 1e2c7f6... working with memory allocation per event
+"""
