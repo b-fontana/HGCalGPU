@@ -1,0 +1,15 @@
+<library name="Test_prod" file="Prod_test.cc Prod_run.cu Kernel_impl.cu">
+  <use name="cuda"/>
+  <use name="DataFormats/HGCRecHit"/>
+  <use name="DataFormats/HcalDetId"/>
+  <use name="DataFormats/DetId"/>
+  <use name="FWCore/Framework"/>
+  <use name="FWCore/Utilities"/>
+  <use name="RecoLocalCalo/HGCalRecAlgos"/>
+  <use name="Geometry/HGCalCommonData"/>
+  <use name="Geometry/HGCalGeometry"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
+  <use name="HeterogeneousCore/CUDACore"/>
+  <use name="HeterogeneousCore/CUDAServices"/>
+  <flags EDM_PLUGIN="1"/>
+</library>
