@@ -17,11 +17,6 @@
 #ifdef __CUDA_ARCH__
 extern __constant__ uint32_t calo_rechit_masks[];
 #endif
-/*
-#ifdef __CUDA_ARCH__
-extern __constant__ uint32_t calo_rechit_masks[];
-#endif
-*/
 
 template <typename T>
 class KernelConstantData {
@@ -60,7 +55,7 @@ class KernelManagerHGCalRecHit {
   HGCRecHitSoA* get_output();
 
  private:
-  void after_kernel_();
+  void after_();
   LENGTHSIZE get_shared_memory_size_(const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&, const LENGTHSIZE&);
   void assign_and_transfer_to_device_();
   void assign_and_transfer_to_device_(const KernelConstantData<HGCeeUncalibratedRecHitConstantData>*, KernelConstantData<HGCeeUncalibratedRecHitConstantData>*);

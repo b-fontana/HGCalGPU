@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <chrono>
 #include <cuda_runtime.h>
 
 #include "FWCore/Framework/interface/stream/EDProducer.h"
@@ -19,21 +20,78 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
-#include "HGCalRecHitKernelWrappers.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
+#include "Geometry/HGCalGeometry/interface/HGCalGeometry.h"
+#include "Geometry/HGCalCommonData/interface/HGCalDDDConstants.h"
+
+#include "HeterogeneousCore/CUDACore/interface/CUDAScopedContext.h"
+#include "HeterogeneousCore/CUDACore/interface/CUDAContextState.h"
+#include "HeterogeneousCore/CUDAServices/interface/CUDAService.h"
+#include "HeterogeneousCore/CUDAUtilities/interface/cudaCheck.h"
+
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+#include "HeterogeneousHGCalProducerMemoryWrapper.h"
+#include "KernelManager.h"
 #include "Utils.h"
 
-class HeterogeneousHGCalHEFRecHitsProd: public edm::stream::EDProducer<> 
+class HeterogeneousHGCalHEFRecHitProducer: public edm::stream::EDProducer<edm::ExternalWork> 
 {
  public:
-  explicit HeterogeneousHGCalHEFRecHitsProd(const edm::ParameterSet& ps);
-  ~HeterogeneousHGCalHEFRecHitsProd() override;
+  explicit HeterogeneousHGCalHEFRecHitProducer(const edm::ParameterSet& ps);
+  ~HeterogeneousHGCalHEFRecHitProducer() override;
 
-  void produce(edm::Event& iEvent, const edm::EventSetup&) override;
+  virtual void acquire(edm::Event const&, edm::EventSetup const&, edm::WaitingTaskWithArenaHolder) override;
+  virtual void produce(edm::Event&, const edm::EventSetup&) override;
 
  private:
+  unsigned int nhitsmax_ = 0;
+  unsigned int stride_ = 0;
   edm::EDGetTokenT<HGChefUncalibratedRecHitCollection> token_;
   const std::string collection_name_ = "HeterogeneousHGChefUncalibratedRecHits";
-  edm::Handle<HGChefUncalibratedRecHitCollection> handle_hef_;
+  edm::Handle<HGChefUncalibratedRecHitCollection> handle_hef_; 
+  size_t handle_size_;
+  HGChefRecHitCollection rechits_raw_;
+  std::unique_ptr< HGChefRecHitCollection > rechits_;
+  CUDAContextState ctxState_;
+
+  //constants
+  HGChefUncalibratedRecHitConstantData cdata_;
+  HGCConstantVectorData vdata_;
+
+  //memory
+  void allocate_memory_();
+  cudautils::host::noncached::unique_ptr<double[]> h_mem_const_;
+  cudautils::device::unique_ptr<double[]> d_mem_const_;
+  cudautils::host::noncached::unique_ptr<float[]> h_mem_in_;
+  cudautils::device::unique_ptr<float[]> d_mem_;
+  cudautils::host::unique_ptr<float[]> h_mem_out_;
+
+  //geometry
+  void set_geometry_(const edm::EventSetup&);
+  std::unique_ptr<hgcal::RecHitTools> tools_;
+  const HGCalDDDConstants* ddd_ = nullptr;
+
+  //data processing
+  void convert_collection_data_to_soa_(const edm::SortedCollection<HGCUncalibratedRecHit>&, HGCUncalibratedRecHitSoA*, const unsigned int&);
+  edm::SortedCollection<HGCRecHit> convert_soa_data_to_collection_(HGCRecHitSoA*, const unsigned int&);
+  void convert_constant_data_(KernelConstantData<HGChefUncalibratedRecHitConstantData>*);
+
+  HGCUncalibratedRecHitSoA *old_soa_ = nullptr, *d_oldhits_ = nullptr, *d_newhits_ = nullptr;
+  HGCRecHitSoA *new_soa_ = nullptr, *d_newhits_final_ = nullptr, *h_newhits_ = nullptr;
+  KernelModifiableData<HGCUncalibratedRecHitSoA, HGCRecHitSoA> *kmdata_;
+  KernelConstantData<HGChefUncalibratedRecHitConstantData> *h_kcdata_;
+  KernelConstantData<HGChefUncalibratedRecHitConstantData> *d_kcdata_;
+  edm::SortedCollection<HGCRecHit> out_data_;
+
+  //print to ROOT histograms
+  TH1F *histo1_, *histo2_, *histo3_, *histo4_;
+  edm::Service<TFileService> fs;
+
+  //time measurement 
+  std::chrono::steady_clock::time_point begin;
+  std::chrono::steady_clock::time_point end;
 };
 
 #endif //HeterogeneousHGCalHEFRecHitProducer_h

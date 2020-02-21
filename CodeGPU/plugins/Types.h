@@ -34,7 +34,6 @@ class HGCeeUncalibratedRecHitConstantData {
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
   bool hgcEE_isSiFE_;
-  LENGTHSIZE ndoubles;
   LENGTHSIZE nbytes;
   LENGTHSIZE ndelem;
   LENGTHSIZE nfelem;
@@ -86,11 +85,7 @@ class HGChebUncalibratedRecHitConstantData {
   double hgcHEB_keV2DIGI_;
   double hgchebUncalib2GeV_;
   double hgcHEB_noise_MIP_;
-  double *hgcHEB_fCPerMIP_;
-  double *hgcHEB_cce_;
-  double *rcorr_;
   double *weights_;
-  int *waferTypeL_;
   uint32_t rangeMatch_;
   uint32_t rangeMask_;
   uint32_t fhOffset_;
@@ -101,11 +96,7 @@ class HGChebUncalibratedRecHitConstantData {
   LENGTHSIZE nuelem;
   LENGTHSIZE nielem;
   LENGTHSIZE nbelem;
-  LENGTHSIZE s_hgcHEB_fCPerMIP_;
-  LENGTHSIZE s_hgcHEB_cce_;
-  LENGTHSIZE s_rcorr_;
   LENGTHSIZE s_weights_;
-  LENGTHSIZE s_waferTypeL_;
 };
 
 class HGCUncalibratedRecHitSoA {

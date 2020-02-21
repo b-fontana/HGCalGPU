@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <chrono>
 #include <cuda_runtime.h>
 
 #include "FWCore/Framework/interface/stream/EDProducer.h"
@@ -28,15 +29,18 @@
 #include "HeterogeneousCore/CUDAServices/interface/CUDAService.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/cudaCheck.h"
 
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+
 #include "HeterogeneousHGCalProducerMemoryWrapper.h"
 #include "KernelManager.h"
 #include "Utils.h"
 
-class HeterogeneousHGCalEERecHitsProd: public edm::stream::EDProducer<edm::ExternalWork> 
+class HeterogeneousHGCalEERecHitProducer: public edm::stream::EDProducer<edm::ExternalWork> 
 {
  public:
-  explicit HeterogeneousHGCalEERecHitsProd(const edm::ParameterSet& ps);
-  ~HeterogeneousHGCalEERecHitsProd() override;
+  explicit HeterogeneousHGCalEERecHitProducer(const edm::ParameterSet& ps);
+  ~HeterogeneousHGCalEERecHitProducer() override;
 
   virtual void acquire(edm::Event const&, edm::EventSetup const&, edm::WaitingTaskWithArenaHolder) override;
   virtual void produce(edm::Event&, const edm::EventSetup&) override;
@@ -57,6 +61,7 @@ class HeterogeneousHGCalEERecHitsProd: public edm::stream::EDProducer<edm::Exter
   HGCConstantVectorData vdata_;
 
   //memory
+  void allocate_memory_();
   cudautils::host::noncached::unique_ptr<double[]> h_mem_const_;
   cudautils::device::unique_ptr<double[]> d_mem_const_;
   cudautils::host::noncached::unique_ptr<float[]> h_mem_in_;
@@ -80,6 +85,13 @@ class HeterogeneousHGCalEERecHitsProd: public edm::stream::EDProducer<edm::Exter
   KernelConstantData<HGCeeUncalibratedRecHitConstantData> *d_kcdata_;
   edm::SortedCollection<HGCRecHit> out_data_;
 
+  //print to ROOT histograms
+  TH1F *histo1_, *histo2_, *histo3_, *histo4_;
+  edm::Service<TFileService> fs;
+
+  //time measurement 
+  std::chrono::steady_clock::time_point begin;
+  std::chrono::steady_clock::time_point end;
 };
 
 #endif //HeterogeneousHGCalEERecHitProducer_h
