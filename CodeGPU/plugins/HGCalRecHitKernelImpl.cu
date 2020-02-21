@@ -12,11 +12,12 @@ int wafer(uint32_t id)
 }
 
 __device__
-int layer(uint32_t id)
+int layer(uint32_t id, unsigned int offset)
 {
   static const int kHGCalLayerOffset = 20;
   static const int kHGCalLayerMask = 0x1F;
-  return (id >> kHGCalLayerOffset) & kHGCalLayerMask; 
+  int layer = (id >> kHGCalLayerOffset) & kHGCalLayerMask; 
+  return layer + offset;
 }
 
 __device__ 
@@ -25,8 +26,40 @@ double get_weight_from_layer(const LENGTHSIZE& padding, const int& layer, double
   return sd[padding + layer];
 }
 
+__device__
+void make_rechit(unsigned int tid, HGCRecHitSoA& dst_soa, HGCUncalibratedRecHitSoA& src_soa, const bool &heb_flag, 
+		 const double &weight, const double &rcorr, const double &cce_correction, const double &sigmaNoiseGeV, float *& sf)
+{
+  dst_soa.id[tid] = src_soa.id[tid];
+  dst_soa.energy[tid] = src_soa.amplitude[tid] * weight * 0.001f;
+  if(!heb_flag)
+    dst_soa.energy[tid] *=  __fdividef(rcorr, cce_correction);
+  dst_soa.time[tid] = src_soa.jitter[tid];
+  dst_soa.flagBits[tid] |= (0x1 << FlagsGPU::kGood);
+  float son = __fdividef( dst_soa.energy[tid], sigmaNoiseGeV);
+  float son_norm = fminf(32.f, son) / 32.f * ((1 << 8)-1);
+  dst_soa.son[tid] = static_cast<uint8_t>( lroundf( son_norm ) );
+  printf("amplitude: %f weight: %f --- %f %f %f %f --- %d %u final son: %u\n", src_soa.amplitude[tid], weight, dst_soa.energy[tid], sigmaNoiseGeV, son, son_norm, lroundf( son_norm ), dst_soa.son[tid], dst_soa.son[tid]);
+  if(heb_flag==0)
+    {
+      //get time resolution
+      float max = fmaxf(son, sf[0]); //this max trick avoids if...elseif...else condition
+      float aterm = sf[2];
+      float cterm = sf[3];
+      dst_soa.timeError[tid] = sqrt( __fdividef(aterm,max)*__fdividef(aterm,max) + cterm*cterm );
+    }
+  else
+    dst_soa.timeError[tid] = -1;
+}
+
 __device__ 
 double get_thickness_correction(const LENGTHSIZE& padding, double *& sd, const HGCeeUncalibratedRecHitConstantData& cdata)
+{
+  int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained fro the DetId and the wafer() __device__ function.
+  return sd[padding + waferTypeL];
+}
+__device__ 
+double get_thickness_correction(const LENGTHSIZE& padding, double *& sd, const HGChefUncalibratedRecHitConstantData& cdata)
 {
   int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained fro the DetId and the wafer() __device__ function.
   return sd[padding + waferTypeL];
@@ -38,9 +71,21 @@ double get_noise(const LENGTHSIZE& padding, double *& sd, const HGCeeUncalibrate
   int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained fro the DetId and the wafer() __device__ function.
   return sd[padding + waferTypeL - 1];
 }
+__device__
+double get_noise(const LENGTHSIZE& padding, double *& sd, const HGChefUncalibratedRecHitConstantData& cdata)
+{
+  int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained fro the DetId and the wafer() __device__ function.
+  return sd[padding + waferTypeL - 1];
+}
 
 __device__
 double get_cce_correction(const LENGTHSIZE& padding, double *& sd, const HGCeeUncalibratedRecHitConstantData& cdata)
+{
+  int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained fro the DetId and the wafer() __device__ function.
+  return sd[padding + waferTypeL - 1];
+}
+__device__
+double get_cce_correction(const LENGTHSIZE& padding, double *& sd, const HGChefUncalibratedRecHitConstantData& cdata)
 {
   int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained fro the DetId and the wafer() __device__ function.
   return sd[padding + waferTypeL - 1];
@@ -49,52 +94,49 @@ double get_cce_correction(const LENGTHSIZE& padding, double *& sd, const HGCeeUn
 __device__ 
 double get_fCPerMIP(const LENGTHSIZE& padding, double *& sd, const HGCeeUncalibratedRecHitConstantData& cdata)
 {
-  int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained fro the DetId and the wafer() __device__ function.
+  int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained from the DetId and the wafer() __device__ function.
   return sd[padding + waferTypeL - 1];
 }
-
 __device__ 
-double get_time_resolution(float son, float *& sf)
+double get_fCPerMIP(const LENGTHSIZE& padding, double *& sd, const HGChefUncalibratedRecHitConstantData& cdata)
 {
-  float max = fmaxf(son, sf[0]); //this max trick avoids if...elseif...else condition
-  float aterm = sf[2];
-  float cterm = sf[3];
-  float val = sqrt( __fdividef(aterm,max)*__fdividef(aterm,max) + cterm*cterm );
-  return val;
+  int waferTypeL = cdata.waferTypeL_[1]; //this should be obtained from the DetId and the wafer() __device__ function.
+  return sd[padding + waferTypeL - 1];
 }
 
 __device__ 
 void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si, bool*& sb, const HGCeeUncalibratedRecHitConstantData& cdata, const LENGTHSIZE& size1, const LENGTHSIZE& size2, const LENGTHSIZE& size3, const LENGTHSIZE& size4, const LENGTHSIZE& size5, const LENGTHSIZE& size6)
 {
+  const int initial_pad = 2;
   if(tid == 0)
     sd[tid] = cdata.hgcEE_keV2DIGI_;
   else if(tid == 1)
     sd[tid] = cdata.hgceeUncalib2GeV_;
-  else if(tid > 1 && tid < size1)
-      sd[tid] = cdata.hgcEE_fCPerMIP_[tid-2];
+  else if(tid >= initial_pad && tid < size1)
+    sd[tid] = cdata.hgcEE_fCPerMIP_[tid-2];
   else if(tid >= size1 && tid < size2)
     sd[tid] = cdata.hgcEE_cce_[tid-size1];
   else if(tid >= size2 && tid < size3)
     sd[tid] = cdata.hgcEE_noise_fC_[tid-size2];
   else if(tid >= size3 && tid < size4)
-      sd[tid] = cdata.rcorr_[tid - size3];
+    sd[tid] = cdata.rcorr_[tid - size3];
   else if(tid >= size4 && tid < size5)
-      sd[tid] = cdata.weights_[tid - size4];
+    sd[tid] = cdata.weights_[tid - size4];
   else if(tid >= size5 && tid < size6)
     si[tid - size5] = cdata.waferTypeL_[tid - size5];
-  else if(tid == size6 + 1)
+  else if(tid == size6)
     sf[0] = (cdata.xmin_ > 0) ? cdata.xmin_ : 0.1;
-  else if(tid == size6 + 2)
+  else if(tid == size6 + 1)
     sf[1] = cdata.xmax_;
-  else if(tid == size6 + 3)
+  else if(tid == size6 + 2)
     sf[2] = cdata.aterm_;
-  else if(tid == size6 + 4)
+  else if(tid == size6 + 3)
     sf[3] = cdata.cterm_;
-  else if(tid == size6 + 5)
+  else if(tid == size6 + 4)
     su[0] = cdata.rangeMatch_;
-  else if(tid == size6 + 6)
+  else if(tid == size6 + 5)
     su[1] = cdata.rangeMask_;
-  else if(tid == size6 + 7)
+  else if(tid == size6 + 6)
     sb[0] = cdata.hgcEE_isSiFE_;
 
   __syncthreads();
@@ -103,23 +145,79 @@ void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si
 __device__ 
 void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si, bool*& sb, const HGChefUncalibratedRecHitConstantData& cdata, const LENGTHSIZE& size1, const LENGTHSIZE& size2, const LENGTHSIZE& size3, const LENGTHSIZE& size4, const LENGTHSIZE& size5, const LENGTHSIZE& size6)
 {
+  const int initial_pad = 2;
+  if(tid == 0)
+    sd[tid] = cdata.hgcHEF_keV2DIGI_;
+  else if(tid == 1)
+    sd[tid] = cdata.hgchefUncalib2GeV_;
+  else if(tid >= initial_pad && tid < size1)
+    sd[tid] = cdata.hgcHEF_fCPerMIP_[tid-initial_pad];
+  else if(tid >= size1 && tid < size2)
+    sd[tid] = cdata.hgcHEF_cce_[tid-size1];
+  else if(tid >= size2 && tid < size3)
+    sd[tid] = cdata.hgcHEF_noise_fC_[tid-size2];  
+  else if(tid >= size3 && tid < size4)
+    sd[tid] = cdata.rcorr_[tid - size3];
+  else if(tid >= size4 && tid < size5)
+    sd[tid] = cdata.weights_[tid - size4];
+  else if(tid >= size5 && tid < size6)
+    si[tid - size5] = cdata.waferTypeL_[tid - size5];
+  else if(tid == size6)
+    sf[0] = (cdata.xmin_ > 0) ? cdata.xmin_ : 0.1;
+  else if(tid == size6 + 1)
+    sf[1] = cdata.xmax_;
+  else if(tid == size6 + 2)
+    sf[2] = cdata.aterm_;
+  else if(tid == size6 + 3)
+    sf[3] = cdata.cterm_;
+  else if(tid == size6 + 4)
+    su[0] = cdata.rangeMatch_;
+  else if(tid == size6 + 5)
+    su[1] = cdata.rangeMask_;
+  /*
+  else if(tid == size6 + 6)
+    su[2] = cdata.fhOffset_;
+  */
+  else if(tid == size6 + 6) //CHANGE
+    sb[0] = cdata.hgcHEF_isSiFE_;
+
+  __syncthreads();
 }
 
 __device__ 
-void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, int*& si, bool*& sb, const HGChebUncalibratedRecHitConstantData& cdata, const LENGTHSIZE& size1, const LENGTHSIZE& size2, const LENGTHSIZE& size3, const LENGTHSIZE& size4, const LENGTHSIZE& size5, const LENGTHSIZE& size6)
+void set_shared_memory(int tid, double*& sd, float*& sf, uint32_t*& su, bool*& sb, const HGChebUncalibratedRecHitConstantData& cdata, const LENGTHSIZE& size1)
 {
+  const int initial_pad = 3;
+  if(tid == 0)
+    sd[tid] = cdata.hgcHEB_keV2DIGI_;
+  else if(tid == 1)
+    sd[tid] = cdata.hgchebUncalib2GeV_;
+  else if(tid == 2)
+    sd[tid] = cdata.hgcHEB_noise_MIP_;
+  else if(tid >= initial_pad && tid < size1)
+    sd[tid] = cdata.weights_[tid - initial_pad];
+  else if(tid == size1)
+    su[0] = cdata.rangeMatch_;
+  else if(tid == size1 + 1)
+    su[1] = cdata.rangeMask_;
+  else if(tid == size1 + 2)
+    su[2] = cdata.fhOffset_;
+  else if(tid == size1 + 3)
+    sb[0] = cdata.hgcHEB_isSiFE_;
+
+  __syncthreads();
 }
 
 __global__
 void ee_step1(HGCUncalibratedRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGCeeUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
-  printf("POINTER 2: %p\n", src_soa.amplitude);
-  //this kernel is currently doing nothing
+  /*
   unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
   for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
       dst_soa.amplitude[i] = src_soa.amplitude[i];
     }
+  */
 }
 
 __global__
@@ -154,38 +252,73 @@ void ee_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const 
 
   for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
     {
-      dst_soa.id[i] = src_soa.id[i];
-      int l = layer(dst_soa.id[i]);
+      double l = layer(src_soa.id[tid], 0); //no offset
       double weight = get_weight_from_layer(size4, l, sd);
       double rcorr = get_thickness_correction(size3, sd, cdata);
       double noise = get_noise(size2, sd, cdata);
       double cce_correction = get_cce_correction(size1, sd, cdata);
       double fCPerMIP = get_fCPerMIP(2, sd, cdata);
-      double sigmaNoiseGeV = 1e-3 * weight * rcorr * __fdividef( noise,  fCPerMIP );
-
-      //makeRecHit
-      dst_soa.energy[i] = src_soa.amplitude[i] * weight * 0.001f * __fdividef(rcorr, cce_correction);
-      dst_soa.time[i] = src_soa.jitter[i];
-      dst_soa.flagBits[i] |= (0x1 << FlagsGPU::kGood);
-      float son = __fdividef( dst_soa.energy[i], sigmaNoiseGeV);
-      dst_soa.son[i] = nearbyintf( fmaxf(32.f, son) / ( 32.f * ((1 << 8)-1) ) );
-      dst_soa.timeError[i] = get_time_resolution( son, sf );
-
-      printf("quant %d: %d, %d, %f, %f, %f, %f, %f, %f\n", i, l, dst_soa.id[i], weight, rcorr, noise, cce_correction, fCPerMIP, sigmaNoiseGeV);
-      printf("src %d: %f, %f, %f, %f, %f, %f, %d, %d, %d\n", i, src_soa.amplitude[i], src_soa.pedestal[i], src_soa.jitter[i], src_soa.chi2[i], src_soa.OOTamplitude[i], src_soa.OOTchi2[i], (int)src_soa.flags[i], (int)src_soa.aux[i], (int)src_soa.id[i]);
-      printf("dst %d: %f, %f, %f, %d, %d, %d\n", i, dst_soa.energy[i], dst_soa.time[i], dst_soa.timeError[i], dst_soa.id[i], dst_soa.flagBits[i], dst_soa.son[i]);
+      double sigmaNoiseGeV = 1e-3 * weight * rcorr * __fdividef( noise, fCPerMIP );
+      make_rechit(i, dst_soa, src_soa, false, weight, rcorr, cce_correction, sigmaNoiseGeV, sf);
     }
 }
 
 __global__
 void hef_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChefUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
+ unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
+
+  int size1 = cdata.s_hgcHEF_fCPerMIP_ + 2;
+  int size2 = cdata.s_hgcHEF_cce_      + size1;
+  int size3 = cdata.s_hgcHEF_noise_fC_ + size2;
+  int size4 = cdata.s_rcorr_           + size3; 
+  int size5 = cdata.s_weights_         + size4; 
+  int size6 = cdata.s_waferTypeL_      + size5;
+
+  extern __shared__ double s[];
+  double   *sd = s;
+  float    *sf = (float*)   (sd + cdata.ndelem);
+  uint32_t *su = (uint32_t*)(sf + cdata.nfelem);
+  int      *si = (int*)     (su + cdata.nuelem);
+  bool     *sb = (bool*)    (si + cdata.nielem);
+
+  set_shared_memory(threadIdx.x, sd, sf, su, si, sb, cdata, size1, size2, size3, size4, size5, size6);
+
+  for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
+    {
+      double l = layer(src_soa.id[tid], 0); //no offset
+      double weight = get_weight_from_layer(size4, l, sd);
+      double rcorr = get_thickness_correction(size3, sd, cdata);
+      double noise = get_noise(size2, sd, cdata);
+      double cce_correction = get_cce_correction(size1, sd, cdata);
+      double fCPerMIP = get_fCPerMIP(2, sd, cdata);
+      double sigmaNoiseGeV = 1e-3 * weight * rcorr * __fdividef( noise,  fCPerMIP );
+      make_rechit(i, dst_soa, src_soa, false, weight, rcorr, cce_correction, sigmaNoiseGeV, sf);
+    }
 }
 
 __global__
 void heb_to_rechit(HGCRecHitSoA dst_soa, HGCUncalibratedRecHitSoA src_soa, const HGChebUncalibratedRecHitConstantData cdata, LENGTHSIZE length)
 {
-  //dst_soa.timeError[i] = -1.;
+  unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
+
+  int size1 = cdata.s_weights_ + 3; 
+
+  extern __shared__ double s[];
+  double   *sd = s;
+  float    *sf = (float*)   (sd + cdata.ndelem);
+  uint32_t *su = (uint32_t*)(sf + cdata.nfelem);
+  bool     *sb = (bool*)    (su + cdata.nielem);
+  set_shared_memory(threadIdx.x, sd, sf, su, sb, cdata, size1);
+
+  for (unsigned int i = tid; i < length; i += blockDim.x * gridDim.x)
+    {
+      double l = layer(src_soa.id[tid], su[2]);
+      double weight = get_weight_from_layer(3, l, sd);
+      double noise = sd[2];
+      double sigmaNoiseGeV = 1e-3 * noise * weight;
+      make_rechit(i, dst_soa, src_soa, true, weight, 0., 0., sigmaNoiseGeV, sf);
+    }
 }
 
 /*

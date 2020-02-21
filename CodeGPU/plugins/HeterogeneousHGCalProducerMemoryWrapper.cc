@@ -60,16 +60,12 @@ namespace memory {
     }
 
     void device(KernelConstantData<HGChebUncalibratedRecHitConstantData> *kcdata, cudautils::device::unique_ptr<double[]>& mem) {
-      const std::vector<LENGTHSIZE> nelements = {kcdata->data.s_hgcHEB_fCPerMIP_, kcdata->data.s_hgcHEB_cce_, kcdata->data.s_rcorr_, kcdata->data.s_weights_, kcdata->data.s_waferTypeL_};
-      auto memsizes = get_memory_sizes_(nelements, 4, 0, 1);
+      const std::vector<LENGTHSIZE> nelements = {kcdata->data.s_weights_};
+      auto memsizes = get_memory_sizes_(nelements, 1, 0, 0);
 
       mem = cudautils::make_device_unique<double[]>(std::get<0>(memsizes), 0);
 
-      kcdata->data.hgcHEB_fCPerMIP_ = mem.get();
-      kcdata->data.hgcHEB_cce_      = kcdata->data.hgcHEB_fCPerMIP_ + nelements[0];
-      kcdata->data.rcorr_           = kcdata->data.hgcHEB_cce_ + nelements[1];
-      kcdata->data.weights_         = kcdata->data.rcorr_ + nelements[2];
-      kcdata->data.waferTypeL_      = reinterpret_cast<int*>(kcdata->data.weights_ + nelements[3]);
+      kcdata->data.weights_         = mem.get();
       kcdata->data.nbytes = std::get<0>(memsizes);
       kcdata->data.ndelem = std::get<1>(memsizes) + 3;
       kcdata->data.nfelem = std::get<2>(memsizes) + 0;
@@ -87,11 +83,7 @@ namespace memory {
 
       mem = cudautils::make_device_unique<float[]>(nhits * size_tot, 0);
 
-      std::cout << "Device size allocated: " << nhits * size_tot << std::endl;
-      std::cout << "Device size allocated for one: " << nhits *  (6*sizeof(float) + 3*sizeof(uint32_t)) << std::endl;
-      std::cout << "Address allocate device before: " << soa1->amplitude << std::endl;
       soa1->amplitude     = mem.get();
-      std::cout << "Address allocate device after: " << soa1->amplitude << std::endl;
       soa1->pedestal      = soa1->amplitude    + nhits;
       soa1->jitter        = soa1->pedestal     + nhits;
       soa1->chi2          = soa1->jitter       + nhits;
@@ -142,7 +134,6 @@ namespace memory {
       kcdata->data.nielem = std::get<3>(memsizes) + 0;
       kcdata->data.nuelem = 2;
       kcdata->data.nbelem = 1;
-      kcdata->data.hgcEE_fCPerMIP_[0] = 4.5;
     }
 
     void host(KernelConstantData<HGChefUncalibratedRecHitConstantData>* kcdata, cudautils::host::noncached::unique_ptr<double[]>& mem)
@@ -168,16 +159,12 @@ namespace memory {
 
     void host(KernelConstantData<HGChebUncalibratedRecHitConstantData>* kcdata, cudautils::host::noncached::unique_ptr<double[]>& mem)
     {
-      const std::vector<LENGTHSIZE> nelements = {kcdata->data.s_hgcHEB_fCPerMIP_, kcdata->data.s_hgcHEB_cce_, kcdata->data.s_rcorr_, kcdata->data.s_weights_, kcdata->data.s_waferTypeL_};
-      auto memsizes = get_memory_sizes_(nelements, 4, 0, 1);
+      const std::vector<LENGTHSIZE> nelements = {kcdata->data.s_weights_};
+      auto memsizes = get_memory_sizes_(nelements, 1, 0, 0);
 
       mem = cudautils::make_host_noncached_unique<double[]>(std::get<0>(memsizes), 0);
 
-      kcdata->data.hgcHEB_fCPerMIP_ = mem.get();
-      kcdata->data.hgcHEB_cce_      = kcdata->data.hgcHEB_fCPerMIP_ + nelements[0];
-      kcdata->data.rcorr_           = kcdata->data.hgcHEB_cce_ + nelements[1];
-      kcdata->data.weights_         = kcdata->data.rcorr_ + nelements[2];
-      kcdata->data.waferTypeL_      = reinterpret_cast<int*>(kcdata->data.weights_ + nelements[3]);
+      kcdata->data.weights_         = mem.get();
       kcdata->data.nbytes = std::get<0>(memsizes);
       kcdata->data.ndelem = std::get<1>(memsizes) + 3;
       kcdata->data.nfelem = std::get<2>(memsizes) + 0;

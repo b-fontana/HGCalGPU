@@ -21,49 +21,38 @@ KernelManagerHGCalRecHit::~KernelManagerHGCalRecHit()
 
 void KernelManagerHGCalRecHit::assign_and_transfer_to_device_()
 {
-  printf("ASSIGN AND TRANSFER:\n");
-  printf("%d, %d\n", nbytes_host_, nbytes_device_);
-  printf("%d, %d, %d, %d, %d\n", (data_->h_in)->nbytes, (data_->d_1)->nbytes, (data_->d_2)->nbytes, (data_->d_out)->nbytes, (data_->h_out)->nbytes);
-  printf("%p\n", (data_->h_in)->amplitude);
-  printf("%p\n", (data_->d_1)->amplitude);
   cudaCheck( cudaMemcpyAsync((data_->d_1)->amplitude, (data_->h_in)->amplitude, nbytes_device_, cudaMemcpyHostToDevice) );
-  cudaCheck( cudaDeviceSynchronize() ); //needed because the copy is asynchronous
-  cudaCheck( cudaGetLastError() );
+  after_();
 }
 
 void KernelManagerHGCalRecHit::assign_and_transfer_to_device_(const KernelConstantData<HGCeeUncalibratedRecHitConstantData> *h_kcdata, KernelConstantData<HGCeeUncalibratedRecHitConstantData> *d_kcdata)
 {
   cudaCheck( cudaMemcpyAsync( d_kcdata->data.hgcEE_fCPerMIP_, h_kcdata->data.hgcEE_fCPerMIP_, h_kcdata->data.nbytes, cudaMemcpyHostToDevice) );
-  cudaCheck( cudaDeviceSynchronize() ); //needed because the copy is asynchronous
-  cudaCheck( cudaGetLastError() );
+  after_();
 }
 
 void KernelManagerHGCalRecHit::assign_and_transfer_to_device_(const KernelConstantData<HGChefUncalibratedRecHitConstantData> *h_kcdata, KernelConstantData<HGChefUncalibratedRecHitConstantData> *d_kcdata)
 {
   cudaCheck( cudaMemcpyAsync( d_kcdata->data.hgcHEF_fCPerMIP_, h_kcdata->data.hgcHEF_fCPerMIP_, h_kcdata->data.nbytes, cudaMemcpyHostToDevice) );
-  cudaCheck( cudaDeviceSynchronize() ); //needed because the copy is asynchronous
-  cudaCheck( cudaGetLastError() );
+  after_();
 }
 
 void KernelManagerHGCalRecHit::assign_and_transfer_to_device_(const KernelConstantData<HGChebUncalibratedRecHitConstantData> *h_kcdata, KernelConstantData<HGChebUncalibratedRecHitConstantData> *d_kcdata)
 {
-  cudaCheck( cudaMemcpyAsync( d_kcdata->data.hgcHEB_fCPerMIP_, h_kcdata->data.hgcHEB_fCPerMIP_, h_kcdata->data.nbytes, cudaMemcpyHostToDevice) );
-  cudaCheck( cudaDeviceSynchronize() ); //needed because the copy is asynchronous
-  cudaCheck( cudaGetLastError() );
+  cudaCheck( cudaMemcpyAsync( d_kcdata->data.weights_, h_kcdata->data.weights_, h_kcdata->data.nbytes, cudaMemcpyHostToDevice) );
+  after_();
 }
 
 void KernelManagerHGCalRecHit::transfer_to_host_and_synchronize_()
 {
   cudaCheck( cudaMemcpyAsync((data_->h_out)->energy, (data_->d_out)->energy, nbytes_host_, cudaMemcpyDeviceToHost) );
-  cudaCheck( cudaDeviceSynchronize() );
-  cudaCheck( cudaGetLastError() );
+  after_();
 }
 
 void KernelManagerHGCalRecHit::reuse_device_pointers_()
 {
   std::swap(data_->d_1, data_->d_2); 
-  cudaCheck( cudaDeviceSynchronize() );
-  cudaCheck( cudaGetLastError() );
+  after_();
 }
 
 LENGTHSIZE KernelManagerHGCalRecHit::get_shared_memory_size_(const LENGTHSIZE& nd, const LENGTHSIZE& nf, const LENGTHSIZE& nu, const LENGTHSIZE& ni, const LENGTHSIZE& nb) {
@@ -80,57 +69,61 @@ void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGCeeUncalib
   assign_and_transfer_to_device_(h_kcdata, d_kcdata);
   assign_and_transfer_to_device_();
 
-  printf("Running ee kernel with: %d hits.\n", data_->nhits);
-  printf("%d blocks being launched with %d threads (%d in total).\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x);
+  printf("%d blocks being launched with %d threads (%d in total) for %d ee hits.\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x, data_->nhits);
   LENGTHSIZE nbytes_shared = get_shared_memory_size_(h_kcdata->data.ndelem, h_kcdata->data.nfelem, h_kcdata->data.nuelem, h_kcdata->data.nielem, h_kcdata->data.nbelem);
-  ee_step1<<<nblocks_, nthreads_>>>( *(data_->d_2), *(data_->d_1), d_kcdata->data, data_->nhits );
-  after_kernel_();
 
-  //reuse_device_pointers_();
+  /*
+  ee_step1<<<nblocks_, nthreads_>>>( *(data_->d_2), *(data_->d_1), d_kcdata->data, data_->nhits );
+  after_();
+  reuse_device_pointers_();
+  */
 
   ee_to_rechit<<<nblocks_, nthreads_, nbytes_shared>>>( *(data_->d_out), *(data_->d_1), d_kcdata->data, data_->nhits );
-  after_kernel_();
+  after_();
 
   transfer_to_host_and_synchronize_();
 }
 
 void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGChefUncalibratedRecHitConstantData> *h_kcdata, KernelConstantData<HGChefUncalibratedRecHitConstantData> *d_kcdata)
 {
-  printf("%d blocks being launched with %d threads (%d in total).\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x);
   assign_and_transfer_to_device_(h_kcdata, d_kcdata);
   assign_and_transfer_to_device_();
 
-  printf("Running ee kernel with: %d hits.\n", data_->nhits);
+  printf("%d blocks being launched with %d threads (%d in total) for %d hef hits.\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x, data_->nhits);
+  LENGTHSIZE nbytes_shared = get_shared_memory_size_(h_kcdata->data.ndelem, h_kcdata->data.nfelem, h_kcdata->data.nuelem, h_kcdata->data.nielem, h_kcdata->data.nbelem);
+
+  /*
   hef_step1<<<nblocks_,nthreads_>>>( *(data_->d_2), *(data_->d_1), d_kcdata->data, data_->nhits);
-  after_kernel_();
-
+  after_();
   reuse_device_pointers_();
+  */
 
-  hef_to_rechit<<<nblocks_,nthreads_>>>( *(data_->d_out), *(data_->d_1), d_kcdata->data, data_->nhits );
-  after_kernel_();
-
+  hef_to_rechit<<<nblocks_,nthreads_, nbytes_shared>>>( *(data_->d_out), *(data_->d_1), d_kcdata->data, data_->nhits );
+  after_();
   transfer_to_host_and_synchronize_();
 }
 
 void KernelManagerHGCalRecHit::run_kernels(const KernelConstantData<HGChebUncalibratedRecHitConstantData> *h_kcdata, KernelConstantData<HGChebUncalibratedRecHitConstantData> *d_kcdata)
 {
-  printf("%d blocks being launched with %d threads (%d in total).\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x);
   assign_and_transfer_to_device_(h_kcdata, d_kcdata);
   assign_and_transfer_to_device_();
 
-  printf("Running ee kernel with: %d hits.\n", data_->nhits);
-  heb_step1<<<nblocks_,nthreads_>>>( *(data_->d_2), *(data_->d_1), d_kcdata->data, data_->nhits);
-  after_kernel_();
+  printf("%d blocks being launched with %d threads (%d in total) for %d heb hits.\n", nblocks_.x, nthreads_.x, nblocks_.x*nthreads_.x, data_->nhits);
+  LENGTHSIZE nbytes_shared = get_shared_memory_size_(h_kcdata->data.ndelem, h_kcdata->data.nfelem, h_kcdata->data.nuelem, h_kcdata->data.nielem, h_kcdata->data.nbelem);
 
-  //reuse_device_pointers_();
+  /*
+  heb_step1<<<nblocks_, nthreads_>>>( *(data_->d_2), *(data_->d_1), d_kcdata->data, data_->nhits);
+  after_();
+  reuse_device_pointers_();
+  */
 
-  heb_to_rechit<<<nblocks_,nthreads_>>>( *(data_->d_out), *(data_->d_1), d_kcdata->data, data_->nhits );
-  after_kernel_();
+  heb_to_rechit<<<nblocks_, nthreads_, nbytes_shared>>>( *(data_->d_out), *(data_->d_1), d_kcdata->data, data_->nhits );
+  after_();
 
   transfer_to_host_and_synchronize_();
 }
 
-void KernelManagerHGCalRecHit::after_kernel_() {
+void KernelManagerHGCalRecHit::after_() {
   cudaCheck( cudaDeviceSynchronize() );
   cudaCheck( cudaGetLastError() );
 }
