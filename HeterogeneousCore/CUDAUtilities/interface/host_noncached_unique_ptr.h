@@ -60,7 +60,7 @@ namespace cms {
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the pinned host memory is not supported");
       void *mem;
-      cudaCheck(cudaHostAlloc(&mem, n * sizeof(element_type), flags));
+      cudaCheck(cudaHostAlloc(&mem, n /** sizeof(element_type)*/, flags));
       return typename host::noncached::impl::make_host_unique_selector<T>::unbounded_array(
           reinterpret_cast<element_type *>(mem));
     }

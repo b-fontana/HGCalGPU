@@ -65,7 +65,7 @@ namespace cms {
       static_assert(std::is_trivially_constructible<element_type>::value,
                     "Allocating with non-trivial constructor on the device memory is not supported");
       int dev = currentDevice();
-      void *mem = allocate_device(dev, n * sizeof(element_type), stream);
+      void *mem = allocate_device(dev, n /** sizeof(element_type)*/, stream);
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
           reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev}};
     }
@@ -88,7 +88,7 @@ namespace cms {
         size_t n, cudaStream_t stream) {
       using element_type = typename std::remove_extent<T>::type;
       int dev = currentDevice();
-      void *mem = allocate_device(dev, n * sizeof(element_type), stream);
+      void *mem = allocate_device(dev, n /** sizeof(element_type)*/, stream);
       return typename device::impl::make_device_unique_selector<T>::unbounded_array{
           reinterpret_cast<element_type *>(mem), device::impl::DeviceDeleter{dev}};
     }
